@@ -7,6 +7,7 @@ from typing import List, Tuple
 import datetime
 import copy
 import html
+import asyncio
 
 
 class TodayIDidBot(BetterSlack):
@@ -110,8 +111,8 @@ class TodayIDidBot(BetterSlack):
             print(message)
             self.parse_message(message)
 
-    def main_loop(self):
-        BetterSlack.main_loop(self, parser=self.parse_messages, on_tick=self.on_tick)
+    async def main_loop(self):
+        await BetterSlack.main_loop(self, parser=self.parse_messages, on_tick=self.on_tick)
 
     @property
     def user_id(self):
@@ -427,7 +428,9 @@ def setup():
 
 def main():
     client = setup()
-    client.main_loop()
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(client.main_loop())
 
 
 if __name__ == '__main__':
