@@ -80,7 +80,52 @@ class ElmRepo(OurRepo):
 
         return elm_016_count
 
+    def get_files_for_017(self, pattern):
+        pattern = pattern.replace('.', '/')
+        all_files = glob.glob(f'{self.repo_dir}/**/{pattern}.elm', recursive=True)
+
+        return [ file for file in all_files
+            if self.what_kinda_file(file) == ELM_017_FILE
+        ]
+
+    def get_files_for_017_with_breakdown(self, pattern):
+        pattern = pattern.replace('.', '/')
+        all_files = glob.glob(f'{self.repo_dir}/**/{pattern}.elm', recursive=True)
+
+        return { file:self.how_trivial_to_port(file) for file in all_files
+            if self.what_kinda_file(file) == ELM_016_FILE
+        }
+
+
+    def how_trivial_to_port(self, filename):
+        """ returns a breakdown of how trivial a file is to port 0.16 -> 0.17 """
+
+        breakdown = {}
+
+        with open(filename) as f:
+            text = f.read()
+
+        if 'port' in text or 'Signal' in text:
+            port_count = text.count('port')
+            signal_count = text.count('Signal')
+            breakdown['Ports and signals'] = (port_count + signal_count) * 3
+
+        if 'import Native' in text:
+            native_modules_count = text.count('import Native')
+            breakdown['Native modules imported'] = (native_modules_count * 2)
+
+        if ' Html' in text:
+            html_count = text.count(' Html')
+            breakdown['Html stuff'] = html_count
+
+        return breakdown
+
+
+
     def what_kinda_file(self, filename):
+        """ if a filename is known to be 0.16 or 0.17, return that const
+            otherwise, go through line by line to try and find some identifiers
+        """
         if filename in self._known_files[ELM_016_FILE]:
             return ELM_016_FILE
 
