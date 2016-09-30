@@ -5,8 +5,8 @@ from our_repo import ElmRepo
 import os
 
 def setup():
-    os.mkdir('reports', exist_ok=True)
-    os.mkdir('repos', exist_ok=True)
+    os.makedirs('reports', exist_ok=True)
+    os.makedirs('repos', exist_ok=True)
 
     with open('priv.json') as f:
         data = json.load(f)
