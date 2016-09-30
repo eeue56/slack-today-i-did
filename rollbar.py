@@ -1,3 +1,6 @@
+"""
+A file for dealing with rollbar related things
+"""
 import requests
 
 
@@ -8,7 +11,6 @@ class Rollbar(object):
 
     def request(self, url):
         actual_url = self.base_url + url + f"?access_token={self.token}"
-        print(actual_url)
         return requests.get(actual_url)
 
     def get_item_by_id(self, id):

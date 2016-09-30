@@ -2,8 +2,12 @@ import json
 import asyncio
 from bot_file import TodayIDidBot
 from our_repo import ElmRepo
+import os
 
 def setup():
+    os.mkdir('reports', exist_ok=True)
+    os.mkdir('repos', exist_ok=True)
+
     with open('priv.json') as f:
         data = json.load(f)
 

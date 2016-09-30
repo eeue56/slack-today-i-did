@@ -1,3 +1,12 @@
+"""
+This file contains the bot itself
+
+To add a new function:
+    - add an entry in `known_functions`. The key is the command the bot will know, the value is the command to run
+    - You must add type annotitions for the bot to match args up correctly
+
+"""
+
 import time
 import datetime
 from slackclient import SlackClient
@@ -350,16 +359,10 @@ class TodayIDidBot(BetterSlack):
         """ reload the functions a bot knows """
 
         import importlib
-
-        print(self.known_user_functions())
         bot_file = importlib.import_module('bot_file')
-        print('bot_file imported:', bot_file)
-        print(bot_file.TodayIDidBot.known_user_functions(self))
-
         self.__class__ = bot_file.TodayIDidBot
         self.known_statements = types.MethodType(bot_file.TodayIDidBot.known_statements, self)
         self.known_user_functions = types.MethodType(bot_file.TodayIDidBot.known_user_functions, self)
-        print(self.known_user_functions())
         #TodayIDidBot.known_user_functions.fset(self, TodayIDidBot.known_user_functions.fget(self))
         #TodayIDidBot.known_statements.fset(self, TodayIDidBot.known_statements.fget(self))
 
@@ -601,7 +604,6 @@ class Report(object):
 
     def save_responses(self):
         with open(f'reports/report-{self.name}-{self.channel}-{self.time_run}.json', 'w') as f:
-            print(self.responses, type(self.responses))
             json.dump(self.responses, f)
 
     def save(self):

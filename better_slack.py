@@ -1,3 +1,7 @@
+"""
+A slack client with much better async support
+"""
+
 import time
 from typing import List
 from slackclient import SlackClient
@@ -125,8 +129,6 @@ class BetterSlack(SlackClient):
     def send_channel_message(self, channel, message) -> None:
         json = {"type": "message", "channel": channel, "text": message}
         self.send_to_websocket(json)
-
-        #self.api_call('chat.postMessage', channel=channel, text=message)
 
     def connected_user(self, username):
         if username not in self.known_users:

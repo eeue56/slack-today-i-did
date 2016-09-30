@@ -1,3 +1,8 @@
+"""
+This file lets you do things with a repo. At the moment, the ElmRepo class can be used
+in order to get meta info on Elm files in a repo, such as the number of 0.16/0.17 files
+"""
+
 import os
 import glob
 
@@ -12,12 +17,10 @@ class OurRepo(object):
         os.makedirs(self.folder, exist_ok=True)
 
     def _git_init(self):
-        print(os.getcwd())
         os.system(f'git clone --depth 1 https://{self.token}@github.com/{self.org}/{self.repo}.git')
         os.system(f'git remote set-url origin https://{self.token}@github.com/{self.org}/{self.repo}.git')
 
     def _git_clone(self, branch_name='master'):
-        print(os.getcwd())
         os.system(f'git remote set-branches origin {branch_name}')
         os.system(f'git fetch --depth 1 origin {branch_name}')
         os.system(f'git checkout {branch_name}')
