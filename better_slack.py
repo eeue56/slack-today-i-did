@@ -17,21 +17,21 @@ class BetterSlack(SlackClient):
         self._conn = None
         self.message_queue = []
         self._should_reconnect = False
+        self._in_count = 0
 
     async def __aenter__(self):
         reply = self.server.api_requester.do(self.token, "rtm.start")
+
         if reply.status_code != 200:
             raise SlackConnectionError
         else:
             login_data = reply.json()
+
             if login_data["ok"]:
                 self.ws_url = login_data['url']
                 if not self._should_reconnect:
-                    print('reconnecting..')
                     self.server.parse_slack_login_data(login_data)
-                print('connecting', self.ws_url)
                 self._conn = websockets.connect(self.ws_url, ssl=ssl_context)
-                print('con', self._conn)
             else:
                 raise SlackLoginError
 
@@ -44,15 +44,22 @@ class BetterSlack(SlackClient):
     async def main_loop(self, parser=None, on_tick=None):
         async with self as self:
             while True:
-                for message in self.message_queue:
-                    await self.websocket.send(message)
+                while len(self.message_queue) > 0:
+                    await self.websocket.send(self.message_queue.pop(0))
 
                 if parser is not None:
                     incoming = await self.get_message()
                     parser(incoming)
                 if on_tick() is not None:
                     on_tick()
+                self._in_count += 1
+
+                if self._in_count > (0.5 * 60 * 3):
+                    self.ping()
+                    self._in_count = 0
+
                 asyncio.sleep(0.5)
+
 
     async def get_message(self):
         incoming = await self.websocket.recv()
@@ -69,6 +76,8 @@ class BetterSlack(SlackClient):
             self.process_changes(item)
         return data
 
+    def ping(self):
+        return self.send_to_websocket({"type": "ping"})
 
     def send_to_websocket(self, data):
         """
@@ -110,10 +119,14 @@ class BetterSlack(SlackClient):
     def send_message(self, name, message) -> None:
         id = self.open_chat(name)
 
-        self.rtm_send_message(id, message)
+        json = {"type": "message", "channel": id, "text": message}
+        self.send_to_websocket(json)
 
     def send_channel_message(self, channel, message) -> None:
-        self.api_call('chat.postMessage', channel=channel, text=message)
+        json = {"type": "message", "channel": channel, "text": message}
+        self.send_to_websocket(json)
+
+        #self.api_call('chat.postMessage', channel=channel, text=message)
 
     def connected_user(self, username):
         if username not in self.known_users:
