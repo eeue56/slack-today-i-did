@@ -18,6 +18,7 @@ class OurRepo(object):
 
     def _git_init(self):
         os.system(f'git clone --depth 1 https://{self.token}@github.com/{self.org}/{self.repo}.git')
+        os.chdir(self.repo)
         os.system(f'git remote set-url origin https://{self.token}@github.com/{self.org}/{self.repo}.git')
 
     def _git_clone(self, branch_name='master'):
@@ -29,7 +30,7 @@ class OurRepo(object):
         current_dir = os.getcwd()
         try:
             self.make_repo_dir()
-            os.chdir(self.folder)
+            os.chdir(self.repo)
             self._git_init()
         except:
             pass
