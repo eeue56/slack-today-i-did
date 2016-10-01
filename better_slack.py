@@ -11,8 +11,12 @@ import ssl
 import json
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-ssl_context.load_verify_locations('/usr/local/etc/openssl/cert.pem')
 
+# os x is dumb so this fixes the openssl cert import
+try:
+    ssl_context.load_verify_locations('/usr/local/etc/openssl/cert.pem')
+except:
+    pass
 
 class BetterSlack(SlackClient):
     def __init__(self, *args, **kwargs):
