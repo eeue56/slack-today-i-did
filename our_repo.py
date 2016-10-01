@@ -24,7 +24,7 @@ class OurRepo(object):
     def _git_clone(self, branch_name='master'):
         os.system(f'git remote set-branches origin {branch_name}')
         os.system(f'git fetch --depth 1 origin {branch_name}')
-        os.system(f'git checkout {branch_name}')
+        os.system(f'git checkout origin/{branch_name}')
 
     def get_ready(self, branch_name='master'):
         current_dir = os.getcwd()
