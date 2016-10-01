@@ -339,7 +339,9 @@ class TodayIDidBot(BetterSlack):
             'report-responses' : self.report_responses,
             'rollbar-item' : self.rollbar_item,
             'elm-progress' : self.elm_progress,
-            'elm-progress-on' : self.elm_progress_on
+            'elm-progress-on' : self.elm_progress_on,
+            'find-017-matches' : self.find_elm_017_matches,
+            'how-hard-to-port' : self.how_trivial_to_port
         }
 
     def known_statements(self):
@@ -401,6 +403,34 @@ class TodayIDidBot(BetterSlack):
         message += f"There are {num_016} 0.16 files."
         message += f"\nThere are {num_017} 0.17 files."
         message += f"\nThat puts us at a total of {num_017 + num_016} Elm files."
+
+        self.send_channel_message(channel, message)
+
+    def find_elm_017_matches(self, channel: str, filename_pattern: str) -> None:
+        """ give a filename of elm to get me to tell you how it looks on master """
+
+        self.repo.get_ready()
+        message = "We have found the following filenames:\n"
+
+        filenames = self.repo.get_files_for_017(filename_pattern)
+        message += " | ".join(filenames)
+
+        self.send_channel_message(channel, message)
+
+    def how_trivial_to_port(self, channel: str, filename_pattern: str) -> None:
+        """ give a filename of elm to get me to tell you how trivial it is to port """
+
+        self.repo.get_ready()
+        message = "We have found the following filenames:\n"
+
+        files = self.repo.get_files_for_017_with_breakdown(filename_pattern)
+
+        message += f'Here\'s the breakdown for the:'
+
+        for (filename, breakdown) in files.items():
+            total_hardness = sum(breakdown.values())
+            message += f'\nfile {filename}: total hardness {total_hardness}\n'
+            message += ' | '.join(f'{name} : {value}' for (name, value) in breakdown.items())
 
         self.send_channel_message(channel, message)
 
