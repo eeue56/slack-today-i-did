@@ -9,14 +9,17 @@ To add a new function:
 
 import time
 import datetime
-from slackclient import SlackClient
-from better_slack import BetterSlack
-from rollbar import Rollbar
-from typing import List, Tuple
 import types
 import copy
 import html
 import json
+
+from typing import List, Tuple
+
+from slackclient import SlackClient
+from better_slack import BetterSlack
+from rollbar import Rollbar
+import self_aware
 
 
 class CommandHistory(object):
@@ -33,7 +36,6 @@ class CommandHistory(object):
         if channel not in self.history:
             return None
         return self.history[channel][-1]
-
 
 
 class TodayIDidBot(BetterSlack):
