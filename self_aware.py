@@ -5,7 +5,7 @@ import logging
 
 def git_checkout(branch):
     os.system('git pull')
-    os.system(f'git checkout origin/{branch}')
+    os.system(f'git checkout {branch}')
 
 def restart_program():
     """Restarts the current program, with file objects and descriptors
