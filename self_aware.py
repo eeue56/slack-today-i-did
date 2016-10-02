@@ -3,6 +3,10 @@ import sys
 import psutil
 import logging
 
+def git_checkout(branch):
+    os.system('git pull')
+    os.system(f'git checkout origin/{branch}')
+
 def restart_program():
     """Restarts the current program, with file objects and descriptors
        cleanup

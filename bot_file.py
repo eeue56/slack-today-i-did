@@ -368,7 +368,7 @@ class TodayIDidBot(BetterSlack):
 
     def reload_branch(self, channel: str, branch: str) -> None:
         """ reload a branch and trigger a restart """
-        self.repo.get_ready(branch)
+        self_aware.git_checkout(branch)
 
         self_aware.restart_program()
 
