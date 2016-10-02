@@ -339,6 +339,7 @@ class TodayIDidBot(BetterSlack):
             'responses' : self.responses,
             'list' : self.list,
             'reload-funcs' : self.reload_functions,
+            'reload': self.reload_branch,
             'house-party' : self.party,
             'report-responses' : self.report_responses,
             'rollbar-item' : self.rollbar_item,
@@ -363,6 +364,11 @@ class TodayIDidBot(BetterSlack):
 
     def reload_functions(self, channel: str) -> None:
         """ reload the functions a bot knows """
+        self_aware.restart_program()
+
+    def reload_branch(self, channel: str, branch: str) -> None:
+        """ reload a branch and trigger a restart """
+        self.repo.get_ready(branch)
 
         self_aware.restart_program()
 
