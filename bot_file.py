@@ -9,38 +9,18 @@ To add a new function:
 
 import time
 import datetime
-import types
-import copy
-import html
 import json
 
 from typing import List, Tuple
 
-from slackclient import SlackClient
-from better_slack import BetterSlack
 from rollbar import Rollbar
 from reports import Report
+from generic_bot import GenericSlackBot
+
 import self_aware
 
 
-class CommandHistory(object):
-    def __init__(self):
-        self.history = {}
-
-    def add_command(self, channel, command, args):
-        if channel not in self.history:
-            self.history[channel] = []
-
-        self.history[channel].append({ 'action': command, 'args': args })
-
-    def last_command(self, channel):
-        if channel not in self.history:
-            return None
-        return self.history[channel][-1]
-
-
-
-class TodayIDidBot(BetterSlack):
+class TodayIDidBot(GenericSlackBot):
     def __init__(self, *args, **kwargs):
         if 'rollbar_token' in kwargs:
             self.rollbar = Rollbar(kwargs.pop('rollbar_token'))
@@ -52,15 +32,10 @@ class TodayIDidBot(BetterSlack):
         else:
             self.repo = None
 
-        BetterSlack.__init__(self, *args, **kwargs)
+        GenericSlackBot.__init__(self, *args, **kwargs)
         self.reports = {}
         self._user_id = None
         self.name = 'today-i-did'
-
-        self.command_history = CommandHistory()
-
-    def is_direct_message(self, message):
-        return message['channel'].startswith('D')
 
     def parse_direct_message(self, message):
         user = message['user']
@@ -73,105 +48,6 @@ class TodayIDidBot(BetterSlack):
                     report.add_response(name, text)
                     self.send_message(name, 'Thanks!')
 
-    def _deal_with_exceptions(self, channel, errors):
-        message = f'I got the following errors:\n'
-        message += '```\n'
-        message += '\n'.join(f'- {func_name} threw {error}' for (func_name, error) in errors)
-        message += '\n```'
-
-        self.send_channel_message(channel, message)
-
-    def parse_message(self, message):
-        if ('type' not in message or 'text' not in message):
-            return None
-
-        if message['type'] != 'message':
-            return None
-
-        if self.is_direct_message(message):
-            return self.parse_direct_message(message)
-
-        channel = message['channel']
-
-
-        text = message['text']
-
-
-        stuff = self.tokenize(text, channel)
-
-        if stuff is None:
-            return
-
-        action = stuff['action']
-        args = stuff['args']
-        errors = stuff.get('errors', [])
-
-
-
-        # validate the command
-        annotations = copy.deepcopy(action.__annotations__)
-        annotations.pop('return')
-        error = False
-
-        # deal with exceptions running the command
-        if len(errors) > 0:
-            self._deal_with_exceptions(channel, errors)
-            error = True
-
-        # deal with mistmachting args
-        if len(annotations) != len(args):
-            message = f'I wanted things to look like for function `{action.__name__}`:\n'
-            message += '```\n'
-            message = message + '\n'.join(f'- {arg_name} : {type}' for (arg_name, type) in annotations.items())
-            message += '\n```'
-
-            message = message + "\nBut you gave me:\n"
-            message += '```\n'
-            message = message + '\n'.join(f'- {arg} : {type}' for (arg, type) in args)
-            message += '\n```'
-
-            if len(annotations) < len(args):
-                self.send_channel_message(channel, 'too many args too many many args\n' + message)
-            else:
-                self.send_channel_message(channel, 'we need some more args in here! we need some more args in here\n' + message)
-
-
-            error = True
-
-        # deal with mistmachting types
-        for ((arg, type), (arg_name, annotation)) in zip(args, annotations.items()):
-            if type != annotation:
-                message = f'Type mistmach for function `{action.__name__}`\n'
-                message += f'You tried to give me a `{type}` but I wanted a `{annotation}` for the arg `{arg_name}`!'
-
-                self.send_channel_message(channel, message)
-                error = True
-
-        if error:
-            return
-
-        func_args = [arg[0] for arg in args]
-
-        if action != self.known_statements()['!!']:
-            self.command_history.add_command(channel, action, func_args)
-
-        action(*func_args)
-
-    def parse_messages(self, messages):
-        for message in messages:
-            print(message)
-            self.parse_message(message)
-
-    async def main_loop(self):
-        await BetterSlack.main_loop(self, parser=self.parse_messages, on_tick=self.on_tick)
-
-    @property
-    def user_id(self):
-        if self._user_id is None:
-            data = self.connected_user(self.name)
-            self._user_id = data
-
-        return self._user_id
 
     def on_tick(self):
         for (channel, reports) in self.reports.items():
@@ -186,112 +62,6 @@ class TodayIDidBot(BetterSlack):
         if report.channel not in self.reports:
             self.reports[report.channel] = {}
         self.reports[report.channel][report.name] = report
-
-    def was_directed_at_me(self, text):
-        return text.startswith(f'<@{self.user_id}>')
-
-    def tokenize(self, text, channel):
-        """
-            at_statement: 'AT' NAME [ arg ]
-            for_statement: 'FOR' NAME [ arg ]
-            func_name: NAME
-            arg: at_statement | for_statement | ENDMARKER
-            arglist: arg
-            single_input: func_name arg ENDMARKER
-        """
-
-        text = text.strip()
-
-        # we only tokenize those that talk to me
-        if self.was_directed_at_me(text):
-            text = text.lstrip(f'<@{self.user_id}>').strip()
-        else:
-            return None
-
-        # we always give the channel as the first arg
-        args = [ (channel, str) ]
-
-
-        tokens = self.fill_in_the_gaps(text, self.tokens_with_index(text))
-        print('tokens', tokens)
-
-        errors = []
-
-        # when we can't find anything
-        if len(tokens) == 0:
-            first_function_name = 'error-help'
-            args.append(('NO_TOKENS', str))
-        # when we have stuff to work with!
-        else:
-            first_function_name = tokens[0][1]
-            first_arg = tokens[0][2].strip()
-
-            if len(first_arg) > 0:
-                args.append((first_arg, str))
-
-            if len(tokens) > 1:
-                for (start_index, function_name, arg_to_function) in tokens[1:]:
-                    func = self.known_functions()[function_name]
-
-                    try:
-                        evaled = func(arg_to_function)
-                        args.append((evaled, func.__annotations__.get('return', None)))
-                    except Exception as e:
-                        errors.append((function_name, e))
-
-        return {
-            'action': self.known_functions()[first_function_name],
-            'args' : args,
-            'errors': errors
-        }
-
-    def fill_in_the_gaps(self, message, tokens):
-        """
-            take things that look like [(12, FOR)] turn into [(12, FOR, noah)]
-        """
-
-        if len(tokens) < 1:
-            return []
-
-        if len(tokens) == 1:
-            start_index = tokens[0][0]
-            token = tokens[0][1]
-
-            return [ (start_index, token, message[start_index + len(token) + 1:]) ]
-
-        builds = []
-
-        for (i, (start_index, token)) in enumerate(tokens):
-            if i == len(tokens) - 1:
-                builds.append((start_index, token, message[start_index + len(token) + 1:]))
-                continue
-
-
-            end_index = tokens[i + 1][0]
-            builds.append((start_index, token, message[start_index + len(token) + 1: end_index]))
-
-        return builds
-
-
-    def tokens_with_index(self, message):
-        """ get the tokens out of a message, in order, along with
-            the index it was found at
-        """
-
-        build = []
-
-        start_index = 0
-        end_index = 0
-        offset = 0
-
-        for word in message.split(' '):
-            if word in self.known_tokens():
-                token = word
-                start_index = end_index + message[end_index:].index(token)
-                end_index = start_index + len(token)
-                build.append((start_index, token))
-
-        return sorted(build, key=lambda x:x[0])
 
     def for_statement(self, text: str) -> List[str]:
         """ enter usernames seperated by commas """
@@ -315,19 +85,6 @@ class TodayIDidBot(BetterSlack):
             return int(text)
         except:
             return 0
-
-    def last_command_statement(self, channel: str) -> None:
-        """ run the last command again """
-
-        stuff = self.command_history.last_command(channel)
-        action = stuff['action']
-        args = stuff['args']
-
-        action(*args)
-
-
-    def known_tokens(self) -> List[str]:
-        return list(self.known_functions().keys())
 
     def known_user_functions(self):
         return {
@@ -358,13 +115,6 @@ class TodayIDidBot(BetterSlack):
             'NUM' : self.num_statement,
             '!!' : self.last_command_statement
         }
-
-    def known_functions(self):
-        return {**self.known_user_functions(), **self.known_statements()}
-
-    def reload_functions(self, channel: str) -> None:
-        """ reload the functions a bot knows """
-        self_aware.restart_program()
 
     def reload_branch(self, channel: str, branch: str) -> None:
         """ reload a branch and trigger a restart """
@@ -451,34 +201,6 @@ class TodayIDidBot(BetterSlack):
 
         self.send_channel_message(channel, f'{pretty}')
 
-
-    def list(self, channel: str) -> None:
-        """ list known statements and functions """
-
-        message = 'Main functions:\n'
-        message += '\n'.join( f'`{func}`'for func in self.known_user_functions())
-        message += '\nStatements:\n'
-        message += '\n'.join( f'`{func}`'for func in self.known_statements())
-
-        self.send_channel_message(channel, message)
-
-
-    def help(self, channel: str, func_name: str) -> None:
-        """ given a func_name preceeded with `~`, I'll tell you about it
-        """
-        func_name = func_name.strip()[1:]
-        func = self.known_functions()[func_name]
-        docs = ' '.join(line.strip() for line in func.__doc__.split('\n'))
-
-        message = f'`{func_name}` has the help message:\n{docs}\nAnd the type info:\n'
-        message += '```\n'
-
-        type_info = '\n'.join(f'- {arg_name} : {type}' for (arg_name, type) in func.__annotations__.items())
-
-        message += f'{type_info}\n```'
-
-        self.send_channel_message(channel, message)
-
     def responses(self, channel: str) -> None:
         """ list the last report responses for the current channel """
 
@@ -529,30 +251,6 @@ class TodayIDidBot(BetterSlack):
         for report in self.reports.get(channel, {}).values():
             report.bother_people(self)
 
-    def error_help(self, channel: str, problem: str) -> None:
-        """ present an error help message """
-        if problem == 'NO_TOKENS':
-            self.send_channel_message(channel, 'I\'m sorry, I couldn\'t find any tokens. Try using `help` or `list`')
-        else:
-            self.send_channel_message(channel, f'Some problem: {problem}')
-
-    def functions_that_return(self, channel:str, text: str) -> None:
-        """ give a type, return functions that return things of that type
-        """
-        func_names = []
-        text = text.strip()
-        text = html.unescape(text)
-
-        for (name, func) in self.known_functions().items():
-            if str(func.__annotations__.get('return', None)) == text:
-                func_names.append((name, func.__annotations__))
-
-        message = f"The following functions return `{text}`:\n"
-        message += '```\n'
-        message += '\n'.join(name for (name, type) in func_names)
-        message +='\n```'
-
-        self.send_channel_message(channel, message)
 
 
 
