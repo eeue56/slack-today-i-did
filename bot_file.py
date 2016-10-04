@@ -17,6 +17,7 @@ from rollbar import Rollbar
 from reports import Report
 from generic_bot import GenericSlackBot
 from known_names import KnownNames
+from notify import Notification
 
 import self_aware
 
@@ -31,6 +32,7 @@ class TodayIDidBot(GenericSlackBot):
 
         self.repo = kwargs.pop('elm_repo', None)
         self.known_names_file = kwargs.pop('known_names_file', 'names.json')
+        self.notify_file = kwargs.pop('notify_file', 'notify.json')
 
 
         GenericSlackBot.__init__(self, *args, **kwargs)
@@ -40,6 +42,22 @@ class TodayIDidBot(GenericSlackBot):
 
         self.known_names = KnownNames()
         self.known_names.load_from_file(self.known_names_file)
+        self.notify = Notification()
+        self.notify.load_from_file(self.notify_file)
+
+
+    def _actually_parse_message(self, message):
+        GenericSlackBot._actually_parse_message(self, message)
+
+        who_wants_it = None
+        try:
+            who_wants_it = self.notify.who_wants_it(message['text'])
+        except Exception as e:
+            pass
+
+        if who_wants_it is not None:
+            for person in who_wants_it:
+                self.time_to_show(message['channel'], person)
 
     def parse_direct_message(self, message):
         user = message['user']
@@ -120,7 +138,9 @@ class TodayIDidBot(GenericSlackBot):
             'how-hard-to-port' : self.how_trivial_to_port,
 
             'who-do-you-know' : self.get_known_names,
-            'know-me' : self.add_known_name
+            'know-me' : self.add_known_name,
+
+            'when-you-hear' : self.when_you_hear
         }
 
     def get_known_names(self, channel: str) -> None:
@@ -141,6 +161,17 @@ class TodayIDidBot(GenericSlackBot):
 
         self.known_names.add_name(person, name)
         self.known_names.save_to_file(self.known_names_file)
+
+    def when_you_hear(self, channel: str, pattern: str) -> None:
+        """ notify the user when you see a pattern """
+        person = self._last_sender
+
+        self.notify.add_pattern(person, pattern)
+        self.notify.save_to_file(self.notify_file)
+
+    def time_to_show(self, channel: str, person: str) -> None:
+        """ notify a person about a message """
+        self.send_channel_message(channel, f"<@{person}> ^")
 
     def reload_branch(self, channel: str, branch: str) -> None:
         """ reload a branch and trigger a restart """
