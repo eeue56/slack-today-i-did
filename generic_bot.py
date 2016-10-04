@@ -134,6 +134,9 @@ class GenericSlackBot(BetterSlack):
         if 'type' not in message or 'text' not in message or message['type'] != 'message':
             return None
 
+
+        self._last_sender = message.get('user', None)
+
         # if it's a direct message, parse it differently
         if self.is_direct_message(message):
             return self.parse_direct_message(message)
