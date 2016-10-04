@@ -184,6 +184,9 @@ class TodayIDidBot(GenericSlackBot):
 
     def time_to_show(self, channel: str, person: str) -> None:
         """ notify a person about a message """
+        if channel.startswith('D'):
+            return
+
         self.send_channel_message(channel, f"<@{person}> ^")
 
     def reload_branch(self, channel: str, branch: str) -> None:
