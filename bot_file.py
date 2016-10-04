@@ -140,7 +140,8 @@ class TodayIDidBot(GenericSlackBot):
             'who-do-you-know' : self.get_known_names,
             'know-me' : self.add_known_name,
 
-            'when-you-hear' : self.when_you_hear
+            'when-you-hear' : self.when_you_hear,
+            'forget' : self.stop_listening
         }
 
     def get_known_names(self, channel: str) -> None:
@@ -167,6 +168,13 @@ class TodayIDidBot(GenericSlackBot):
         person = self._last_sender
 
         self.notify.add_pattern(person, pattern)
+        self.notify.save_to_file(self.notify_file)
+
+    def stop_listening(self, channel: str, pattern: str) -> None:
+        """ stop notify the user when you see a pattern """
+        person = self._last_sender
+
+        self.notify.forget_pattern(person, pattern)
         self.notify.save_to_file(self.notify_file)
 
     def time_to_show(self, channel: str, person: str) -> None:

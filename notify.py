@@ -14,6 +14,14 @@ class Notification(object):
 
         self.patterns[person].append(pattern)
 
+    def forget_pattern(self, person: str, pattern: str):
+        if person not in self.patterns:
+            return
+
+        if pattern in self.patterns[person]:
+
+            self.patterns[person].remove(pattern)
+
     def who_wants_it(self, text):
         who_wants_it = []
 
