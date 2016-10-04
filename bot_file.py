@@ -60,6 +60,9 @@ class TodayIDidBot(GenericSlackBot):
                 self.time_to_show(message['channel'], person)
 
     def parse_direct_message(self, message):
+        if self.was_directed_at_me(message):
+            return self._actually_parse_message(message)
+
         user = message['user']
         text = message['text']
         name = self.user_name_from_id(user)
