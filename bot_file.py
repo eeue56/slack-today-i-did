@@ -16,26 +16,30 @@ from typing import List, Tuple
 from rollbar import Rollbar
 from reports import Report
 from generic_bot import GenericSlackBot
+from known_names import KnownNames
 
 import self_aware
 
 
 class TodayIDidBot(GenericSlackBot):
     def __init__(self, *args, **kwargs):
-        if 'rollbar_token' in kwargs:
-            self.rollbar = Rollbar(kwargs.pop('rollbar_token'))
-        else:
+        rollbar_token = kwargs.pop('rollbar_token', None)
+        if rollbar_token is None:
             self.rollbar = None
-
-        if 'elm_repo' in kwargs:
-            self.repo = kwargs.pop('elm_repo')
         else:
-            self.repo = None
+            self.rollbar = Rollbar(rollbar_token)
+
+        self.repo = kwargs.pop('elm_repo', None)
+        self.known_names_file = kwargs.pop('known_names_file', 'names.json')
+
 
         GenericSlackBot.__init__(self, *args, **kwargs)
         self.reports = {}
         self._user_id = None
         self.name = 'today-i-did'
+
+        self.known_names = KnownNames()
+        self.known_names.load_from_file(self.known_names_file)
 
     def parse_direct_message(self, message):
         user = message['user']
@@ -86,6 +90,16 @@ class TodayIDidBot(GenericSlackBot):
         except:
             return 0
 
+    def known_statements(self):
+        return {
+            'FOR' : self.for_statement,
+            'AT' : self.at_statement,
+            'WAIT' : self.wait_statement,
+            'NOW' : self.now_statement,
+            'NUM' : self.num_statement,
+            '!!' : self.last_command_statement
+        }
+
     def known_user_functions(self):
         return {
             'bother' : self.bother,
@@ -103,18 +117,30 @@ class TodayIDidBot(GenericSlackBot):
             'elm-progress' : self.elm_progress,
             'elm-progress-on' : self.elm_progress_on,
             'find-017-matches' : self.find_elm_017_matches,
-            'how-hard-to-port' : self.how_trivial_to_port
+            'how-hard-to-port' : self.how_trivial_to_port,
+
+            'who-do-you-know' : self.get_known_names,
+            'know-me' : self.add_known_name
         }
 
-    def known_statements(self):
-        return {
-            'FOR' : self.for_statement,
-            'AT' : self.at_statement,
-            'WAIT' : self.wait_statement,
-            'NOW' : self.now_statement,
-            'NUM' : self.num_statement,
-            '!!' : self.last_command_statement
-        }
+    def get_known_names(self, channel: str) -> None:
+        """ Grabs the known names to this bot! """
+        message = []
+
+        for (person, names) in self.known_names.people.items():
+            message.append(f'<@{person}> goes by the names {" | ".join(names)}')
+
+        if len(message) == '':
+            message = "I don't know nuffin or no one"
+
+        self.send_channel_message(channel, '\n'.join(message))
+
+    def add_known_name(self, channel: str, name: str) -> None:
+        """ adds a known name to the collection for the current_user """
+        person = self._last_sender
+
+        self.known_names.add_name(person, name)
+        self.known_names.save_to_file(self.known_names_file)
 
     def reload_branch(self, channel: str, branch: str) -> None:
         """ reload a branch and trigger a restart """
