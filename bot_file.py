@@ -49,15 +49,16 @@ class TodayIDidBot(GenericSlackBot):
     def _actually_parse_message(self, message):
         GenericSlackBot._actually_parse_message(self, message)
 
-        who_wants_it = None
+        people_who_want_notification = None
         try:
-            who_wants_it = self.notify.who_wants_it(message['text'])
+            people_who_want_notification = self.notify.who_wants_it(message['text'])
         except Exception as e:
             pass
 
-        if who_wants_it is not None:
-            for person in who_wants_it:
-                self.time_to_show(message['channel'], person)
+        if people_who_want_notification is not None:
+            for person in people_who_want_notification:
+                self.ping_person(message['channel'], person)
+
 
     def parse_direct_message(self, message):
 
@@ -182,7 +183,7 @@ class TodayIDidBot(GenericSlackBot):
         self.notify.forget_pattern(person, pattern)
         self.notify.save_to_file(self.notify_file)
 
-    def time_to_show(self, channel: str, person: str) -> None:
+    def ping_person(self, channel: str, person: str) -> None:
         """ notify a person about a message """
         if channel.startswith('D'):
             return
@@ -323,7 +324,3 @@ class TodayIDidBot(GenericSlackBot):
         """
         for report in self.reports.get(channel, {}).values():
             report.bother_people(self)
-
-
-
-
