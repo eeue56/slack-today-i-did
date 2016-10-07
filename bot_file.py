@@ -141,7 +141,7 @@ class TodayIDidBot(GenericSlackBot):
             'elm-progress' : self.elm_progress,
             'elm-progress-on' : self.elm_progress_on,
             'find-017-matches' : self.find_elm_017_matches,
-            'how-hard-to-port' : self.how_trivial_to_port,
+            'how-hard-to-port' : self.how_hard_to_port,
 
             'who-do-you-know' : self.get_known_names,
             'know-me' : self.add_known_name,
@@ -245,8 +245,11 @@ class TodayIDidBot(GenericSlackBot):
 
         self.send_channel_message(channel, message)
 
-    def how_trivial_to_port(self, channel: str, filename_pattern: str) -> None:
-        """ give a filename of elm to get me to tell you how trivial it is to port """
+    def how_hard_to_port(self, channel: str, filename_pattern: str) -> None:
+        """ give a filename of elm to get me to tell you how trivial it is to port 
+            Things are hard if: contains ports, signals, native or html. 
+            Ports and signals are hardest, then native, then html. 
+        """
 
         self.repo.get_ready()
         message = "We have found the following filenames:\n"
