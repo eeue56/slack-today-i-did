@@ -5,7 +5,7 @@ in order to get meta info on Elm files in a repo, such as the number of 0.16/0.1
 
 import os
 import glob
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 
 class OurRepo(object):
