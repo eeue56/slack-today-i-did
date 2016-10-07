@@ -5,6 +5,8 @@ in order to get meta info on Elm files in a repo, such as the number of 0.16/0.1
 
 import os
 import glob
+from typing import List, Tuple
+
 
 class OurRepo(object):
     def __init__(self, folder: str, token: str, org: str, repo: str):
@@ -13,20 +15,20 @@ class OurRepo(object):
         self.org = org
         self.repo = repo
 
-    def make_repo_dir(self):
+    def make_repo_dir(self) -> None:
         os.makedirs(self.folder, exist_ok=True)
 
-    def _git_init(self):
+    def _git_init(self) -> None:
         os.system(f'git clone --depth 1 https://{self.token}@github.com/{self.org}/{self.repo}.git')
         os.chdir(self.repo)
         os.system(f'git remote set-url origin https://{self.token}@github.com/{self.org}/{self.repo}.git')
 
-    def _git_clone(self, branch_name='master'):
+    def _git_clone(self, branch_name='master') -> None:
         os.system(f'git remote set-branches origin {branch_name}')
         os.system(f'git fetch --depth 1 origin {branch_name}')
         os.system(f'git checkout origin/{branch_name}')
 
-    def get_ready(self, branch_name='master'):
+    def get_ready(self, branch_name='master') -> None:
         current_dir = os.getcwd()
         try:
             self.make_repo_dir()
@@ -48,6 +50,7 @@ class OurRepo(object):
         return f'{self.folder}/{self.repo}'
 
 
+UNKNOWN_FILE = -1
 ELM_016_FILE = 0
 ELM_017_FILE = 1
 
@@ -57,7 +60,7 @@ class ElmRepo(OurRepo):
         OurRepo.__init__(self, *args, **kwargs)
         self._known_files = { ELM_016_FILE : [], ELM_017_FILE : []}
 
-    def get_elm_files(self):
+    def get_elm_files(self) -> List[str]:
         return glob.glob(f'{self.repo_dir}/**/*.elm', recursive=True)
 
     @property
@@ -80,24 +83,24 @@ class ElmRepo(OurRepo):
 
         return elm_016_count
 
-    def get_files_for_017(self, pattern):
+    def get_files_for_017(self, pattern: str) -> List[str]:
         pattern = pattern.replace('.', '/')
         all_files = glob.glob(f'{self.repo_dir}/**/{pattern}.elm', recursive=True)
 
-        return [ file for file in all_files
-            if self.what_kinda_file(file) == ELM_017_FILE
+        return [ filename for filename in all_files
+            if self.what_kinda_file(filename) == ELM_017_FILE
         ]
 
-    def get_files_for_017_with_breakdown(self, pattern):
+    def get_files_for_017_with_breakdown(self, pattern: str) -> Dict[str,Dict[str, int]]:
         pattern = pattern.replace('.', '/')
         all_files = glob.glob(f'{self.repo_dir}/**/{pattern}.elm', recursive=True)
 
-        return { file:self.how_trivial_to_port(file) for file in all_files
-            if self.what_kinda_file(file) == ELM_016_FILE
+        return { filename : self.how_trivial_to_port(filename) for filename in all_files
+            if self.what_kinda_file(filename) == ELM_016_FILE
         }
 
 
-    def how_trivial_to_port(self, filename):
+    def how_trivial_to_port(self, filename: str) -> Dict[str, int]:
         """ returns a breakdown of how trivial a file is to port 0.16 -> 0.17 """
 
         breakdown = {}
@@ -122,7 +125,7 @@ class ElmRepo(OurRepo):
 
 
 
-    def what_kinda_file(self, filename):
+    def what_kinda_file(self, filename: str) -> int:
         """ if a filename is known to be 0.16 or 0.17, return that const
             otherwise, go through line by line to try and find some identifiers
         """
@@ -142,4 +145,4 @@ class ElmRepo(OurRepo):
                     if 'where' in line:
                         self._known_files[ELM_016_FILE].append(filename)
                         return ELM_016_FILE
-        return None
+        return UNKNOWN_FILE
