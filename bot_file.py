@@ -10,6 +10,7 @@ To add a new function:
 import time
 import datetime
 import json
+import re
 
 from typing import List, Tuple
 
@@ -49,15 +50,16 @@ class TodayIDidBot(GenericSlackBot):
     def _actually_parse_message(self, message):
         GenericSlackBot._actually_parse_message(self, message)
 
-        who_wants_it = None
+        people_who_want_notification = None
         try:
-            who_wants_it = self.notify.who_wants_it(message['text'])
+            people_who_want_notification = self.notify.who_wants_it(message['text'])
         except Exception as e:
             pass
 
-        if who_wants_it is not None:
-            for person in who_wants_it:
-                self.time_to_show(message['channel'], person)
+        if people_who_want_notification is not None:
+            for person in people_who_want_notification:
+                self.ping_person(message['channel'], person)
+
 
     def parse_direct_message(self, message):
 
@@ -103,7 +105,7 @@ class TodayIDidBot(GenericSlackBot):
         return datetime.datetime.strptime(text.strip(), '%H:%M')
 
     def now_statement(self, text: str) -> datetime.datetime:
-        """ enter how much time to wait in the format HH:MM """
+        """ return the current time """
         return datetime.datetime.utcnow()
 
     def num_statement(self, text: str) -> int:
@@ -140,7 +142,7 @@ class TodayIDidBot(GenericSlackBot):
             'elm-progress' : self.elm_progress,
             'elm-progress-on' : self.elm_progress_on,
             'find-017-matches' : self.find_elm_017_matches,
-            'how-hard-to-port' : self.how_trivial_to_port,
+            'how-hard-to-port' : self.how_hard_to_port,
 
             'who-do-you-know' : self.get_known_names,
             'know-me' : self.add_known_name,
@@ -172,8 +174,15 @@ class TodayIDidBot(GenericSlackBot):
         """ notify the user when you see a pattern """
         person = self._last_sender
 
+        try:
+            re.compile(pattern)
+        except Exception as e:
+            self.send_channel_message(channel, f'Invalid regex due to {e.msg}')
+            return
+        
         self.notify.add_pattern(person, pattern)
         self.notify.save_to_file(self.notify_file)
+        self.send_channel_message(channel, f'Thanks! You be notified when I hear that pattern. Use `forget` to stop me notifying you!')
 
     def stop_listening(self, channel: str, pattern: str) -> None:
         """ stop notify the user when you see a pattern """
@@ -182,9 +191,9 @@ class TodayIDidBot(GenericSlackBot):
         self.notify.forget_pattern(person, pattern)
         self.notify.save_to_file(self.notify_file)
 
-    def time_to_show(self, channel: str, person: str) -> None:
-        """ notify a person about a message """
-        if channel.startswith('D'):
+    def ping_person(self, channel: str, person: str) -> None:
+        """ notify a person about a message. Ignore direct messages """
+        if self.is_direct_message(channel):
             return
 
         self.send_channel_message(channel, f"<@{person}> ^")
@@ -244,13 +253,16 @@ class TodayIDidBot(GenericSlackBot):
 
         self.send_channel_message(channel, message)
 
-    def how_trivial_to_port(self, channel: str, filename_pattern: str) -> None:
-        """ give a filename of elm to get me to tell you how trivial it is to port """
+    def how_hard_to_port(self, channel: str, filename_pattern: str) -> None:
+        """ give a filename of elm to get me to tell you how hard it is to port 
+            Things are hard if: contains ports, signals, native or html. 
+            Ports and signals are hardest, then native, then html. 
+        """
 
         self.repo.get_ready()
         message = "We have found the following filenames:\n"
 
-        files = self.repo.get_files_for_017_with_breakdown(filename_pattern)
+        files = self.repo.get_017_porting_breakdown(filename_pattern)
 
         message += f'Here\'s the breakdown for the:'
 
@@ -323,7 +335,3 @@ class TodayIDidBot(GenericSlackBot):
         """
         for report in self.reports.get(channel, {}).values():
             report.bother_people(self)
-
-
-
-

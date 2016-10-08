@@ -5,6 +5,9 @@ in order to get meta info on Elm files in a repo, such as the number of 0.16/0.1
 
 import os
 import glob
+from typing import List, Tuple, Dict
+from enum import Enum
+
 
 class OurRepo(object):
     def __init__(self, folder: str, token: str, org: str, repo: str):
@@ -13,20 +16,20 @@ class OurRepo(object):
         self.org = org
         self.repo = repo
 
-    def make_repo_dir(self):
+    def make_repo_dir(self) -> None:
         os.makedirs(self.folder, exist_ok=True)
 
-    def _git_init(self):
+    def _git_init(self) -> None:
         os.system(f'git clone --depth 1 https://{self.token}@github.com/{self.org}/{self.repo}.git')
         os.chdir(self.repo)
         os.system(f'git remote set-url origin https://{self.token}@github.com/{self.org}/{self.repo}.git')
 
-    def _git_clone(self, branch_name='master'):
+    def _git_clone(self, branch_name: str = 'master') -> None:
         os.system(f'git remote set-branches origin {branch_name}')
         os.system(f'git fetch --depth 1 origin {branch_name}')
         os.system(f'git checkout origin/{branch_name}')
 
-    def get_ready(self, branch_name='master'):
+    def get_ready(self, branch_name: str = 'master') -> None:
         current_dir = os.getcwd()
         try:
             self.make_repo_dir()
@@ -48,16 +51,18 @@ class OurRepo(object):
         return f'{self.folder}/{self.repo}'
 
 
-ELM_016_FILE = 0
-ELM_017_FILE = 1
+class ElmVersion(Enum):
+    unknown = -1
+    v_016 = 0
+    v_017 = 1
 
 
 class ElmRepo(OurRepo):
     def __init__(self, *args, **kwargs):
         OurRepo.__init__(self, *args, **kwargs)
-        self._known_files = { ELM_016_FILE : [], ELM_017_FILE : []}
+        self._known_files = { ElmVersion.v_016 : [], ElmVersion.v_017 : []}
 
-    def get_elm_files(self):
+    def get_elm_files(self) -> List[str]:
         return glob.glob(f'{self.repo_dir}/**/*.elm', recursive=True)
 
     @property
@@ -65,7 +70,7 @@ class ElmRepo(OurRepo):
         elm_017_count = 0
 
         for file in self.get_elm_files():
-            if self.what_kinda_file(file) == ELM_017_FILE:
+            if self.what_kinda_file(file) == ElmVersion.v_017:
                 elm_017_count += 1
 
         return elm_017_count
@@ -75,30 +80,30 @@ class ElmRepo(OurRepo):
         elm_016_count = 0
 
         for file in self.get_elm_files():
-            if self.what_kinda_file(file) == ELM_016_FILE:
+            if self.what_kinda_file(file) == ElmVersion.v_016:
                 elm_016_count += 1
 
         return elm_016_count
 
-    def get_files_for_017(self, pattern):
+    def get_files_for_017(self, pattern: str) -> List[str]:
         pattern = pattern.replace('.', '/')
         all_files = glob.glob(f'{self.repo_dir}/**/{pattern}.elm', recursive=True)
 
-        return [ file for file in all_files
-            if self.what_kinda_file(file) == ELM_017_FILE
+        return [ filename for filename in all_files
+            if self.what_kinda_file(filename) == ElmVersion.v_017
         ]
 
-    def get_files_for_017_with_breakdown(self, pattern):
+    def get_017_porting_breakdown(self, pattern: str) -> Dict[str,Dict[str, int]]:
         pattern = pattern.replace('.', '/')
         all_files = glob.glob(f'{self.repo_dir}/**/{pattern}.elm', recursive=True)
 
-        return { file:self.how_trivial_to_port(file) for file in all_files
-            if self.what_kinda_file(file) == ELM_016_FILE
+        return { filename : self.how_hard_to_port(filename) for filename in all_files
+            if self.what_kinda_file(filename) == ElmVersion.v_016
         }
 
 
-    def how_trivial_to_port(self, filename):
-        """ returns a breakdown of how trivial a file is to port 0.16 -> 0.17 """
+    def how_hard_to_port(self, filename: str) -> Dict[str, int]:
+        """ returns a breakdown of how hard a file is to port 0.16 -> 0.17 """
 
         breakdown = {}
 
@@ -122,24 +127,24 @@ class ElmRepo(OurRepo):
 
 
 
-    def what_kinda_file(self, filename):
+    def what_kinda_file(self, filename: str) -> ElmVersion:
         """ if a filename is known to be 0.16 or 0.17, return that const
             otherwise, go through line by line to try and find some identifiers
         """
-        if filename in self._known_files[ELM_016_FILE]:
-            return ELM_016_FILE
+        if filename in self._known_files[ElmVersion.v_016]:
+            return ElmVersion.v_016
 
-        if filename in self._known_files[ELM_017_FILE]:
-            return ELM_017_FILE
+        if filename in self._known_files[ElmVersion.v_017]:
+            return ElmVersion.v_017
 
 
         with open(filename) as f:
             for line in f:
                 if line.strip():
                     if 'exposing' in line:
-                        self._known_files[ELM_017_FILE].append(filename)
-                        return ELM_017_FILE
+                        self._known_files[ElmVersion.v_017].append(filename)
+                        return ElmVersion.v_017
                     if 'where' in line:
-                        self._known_files[ELM_016_FILE].append(filename)
-                        return ELM_016_FILE
-        return None
+                        self._known_files[ElmVersion.v_016].append(filename)
+                        return ElmVersion.v_016
+        return ElmVersion.unknown
