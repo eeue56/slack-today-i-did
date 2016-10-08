@@ -2,7 +2,10 @@ language: python
 python:
   - "nightly" # currently points to 3.6-dev
 # command to install dependencies
-install: "pip install -r requirements.txt"
+install: 
+  - "pip install -r requirements.txt"
+  - "pip install flake8"
 # command to run tests
-script:
+script: 
   - "python -c 'import main'"
+  - "flake8 ."
