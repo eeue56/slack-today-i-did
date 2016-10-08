@@ -1,7 +1,7 @@
 import json
-from typing import List, Tuple
-
+from typing import List
 import re
+
 
 class Notification(object):
     """ Allows you to register multiple regex patterns with a person
@@ -66,4 +66,4 @@ class Notification(object):
     def save_to_file(self, filename: str) -> None:
         """ save people:patterns to a file """
         with open(filename, 'w') as f:
-            json.dump({ 'patterns' :  self.patterns }, f)
+            json.dump({'patterns': self.patterns}, f)
