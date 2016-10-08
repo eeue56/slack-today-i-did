@@ -5,6 +5,7 @@ python:
 install: 
   - "pip install -r requirements.txt"
   - "pip install flake8"
+  - "pip install git+https://github.com/PyCQA/pyflakes.git"
 # command to run tests
 script: 
   - "python -c 'import main'"
