@@ -2,8 +2,6 @@
 A slack client with much better async support
 """
 
-import time
-from typing import List
 from slackclient import SlackClient
 import websockets
 import asyncio
@@ -18,7 +16,10 @@ try:
 except:
     pass
 
+
 class BetterSlack(SlackClient):
+    """ a better slack client with async/await support """
+
     def __init__(self, *args, **kwargs):
         SlackClient.__init__(self, *args, **kwargs)
         self.known_users = {}
@@ -124,17 +125,17 @@ class BetterSlack(SlackClient):
         return response['channel']['id']
 
 
-    def send_message(self, name, message) -> None:
+    def send_message(self, name: str, message: str) -> None:
         id = self.open_chat(name)
 
         json = {"type": "message", "channel": id, "text": message}
         self.send_to_websocket(json)
 
-    def send_channel_message(self, channel, message) -> None:
+    def send_channel_message(self, channel: str, message: str) -> None:
         json = {"type": "message", "channel": channel, "text": message}
         self.send_to_websocket(json)
 
-    def connected_user(self, username):
+    def connected_user(self, username: str) -> str:
         if username not in self.known_users:
             self.set_known_users()
 
