@@ -177,12 +177,12 @@ class TodayIDidBot(GenericSlackBot):
         try:
             re.compile(pattern)
         except Exception as e:
-            self.send_channel_message(f'Invalid regex due to {e.msg}')
+            self.send_channel_message(channel, f'Invalid regex due to {e.msg}')
             return
         
         self.notify.add_pattern(person, pattern)
         self.notify.save_to_file(self.notify_file)
-        self.send_channel_message(f'Thanks! You be notified when I hear that pattern. Use `forget` to stop me notifying you!')
+        self.send_channel_message(channel, f'Thanks! You be notified when I hear that pattern. Use `forget` to stop me notifying you!')
 
     def stop_listening(self, channel: str, pattern: str) -> None:
         """ stop notify the user when you see a pattern """
