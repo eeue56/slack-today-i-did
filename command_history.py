@@ -6,7 +6,7 @@ class CommandHistory(object):
         if channel not in self.history:
             self.history[channel] = []
 
-        self.history[channel].append({ 'action': command, 'args': args })
+        self.history[channel].append({'action': command, 'args': args})
 
     def last_command(self, channel):
         if channel not in self.history:
