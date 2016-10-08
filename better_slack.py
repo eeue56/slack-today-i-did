@@ -17,6 +17,15 @@ except:
     pass
 
 
+# we need to redefine these because the slackclient library is bad
+class SlackLoginError(Exception):
+    pass
+
+
+class SlackConnectionError(Exception):
+    pass
+
+
 class BetterSlack(SlackClient):
     """ a better slack client with async/await support """
 
@@ -69,20 +78,21 @@ class BetterSlack(SlackClient):
 
                 asyncio.sleep(0.5)
 
-
     async def get_message(self):
         incoming = await self.websocket.recv()
         json_data = ""
         json_data += "{0}\n".format(incoming)
         json_data = json_data.rstrip()
 
-
         data = []
+
         if json_data != '':
             for d in json_data.split('\n'):
                 data.append(json.loads(d))
+
         for item in data:
             self.process_changes(item)
+
         return data
 
     def ping(self):
@@ -123,7 +133,6 @@ class BetterSlack(SlackClient):
         response = self.api_call('im.open', user=person)
 
         return response['channel']['id']
-
 
     def send_message(self, name: str, message: str) -> None:
         id = self.open_chat(name)

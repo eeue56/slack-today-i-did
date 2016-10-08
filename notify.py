@@ -14,15 +14,14 @@ class Notification(object):
     def add_pattern(self, person: str, pattern: str) -> None:
         """ register a pattern to notify a given person
         """
-        
+
         if person not in self.patterns:
             self.patterns[person] = []
 
         self.patterns[person].append(pattern)
 
-
     def forget_pattern(self, person: str, pattern: str) -> None:
-        """ stop notifying a person for a given pattern 
+        """ stop notifying a person for a given pattern
         """
 
         if person not in self.patterns:
@@ -32,7 +31,7 @@ class Notification(object):
             self.patterns[person].remove(pattern)
 
     def who_wants_it(self, text: str) -> None:
-        """ returns a list of people that want to be notified by 
+        """ returns a list of people that want to be notified by
             a message that matches any of the registered patterns
         """
         who_wants_it = []

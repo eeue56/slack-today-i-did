@@ -4,6 +4,7 @@ from bot_file import TodayIDidBot
 from our_repo import ElmRepo
 import os
 
+
 def setup():
     os.makedirs('reports', exist_ok=True)
     os.makedirs('repos', exist_ok=True)
@@ -15,6 +16,7 @@ def setup():
     repo = ElmRepo(github_data['folder'], github_data['token'], github_data['org'], github_data['repo'])
 
     return TodayIDidBot(data['token'], rollbar_token=data['rollbar-token'], elm_repo=repo)
+
 
 def main():
     client = setup()

@@ -10,19 +10,21 @@ def fill_in_the_gaps(message, tokens):
     if len(tokens) == 1:
         start_index = tokens[0][0]
         token = tokens[0][1]
+        bits_after_token = message[start_index + len(token) + 1:]
 
-        return [ (start_index, token, message[start_index + len(token) + 1:]) ]
+        return [(start_index, token, bits_after_token)]
 
     builds = []
 
     for (i, (start_index, token)) in enumerate(tokens):
         if i == len(tokens) - 1:
-            builds.append((start_index, token, message[start_index + len(token) + 1:]))
+            bits_after_token = message[start_index + len(token) + 1:]
+            builds.append((start_index, token, bits_after_token))
             continue
 
-
         end_index = tokens[i + 1][0]
-        builds.append((start_index, token, message[start_index + len(token) + 1: end_index]))
+        bits_after_token = message[start_index + len(token) + 1: end_index]
+        builds.append((start_index, token, bits_after_token))
 
     return builds
 
@@ -45,7 +47,7 @@ def tokens_with_index(known_tokens, message):
             end_index = start_index + len(token)
             build.append((start_index, token))
 
-    return sorted(build, key=lambda x:x[0])
+    return sorted(build, key=lambda x: x[0])
 
 
 def tokenize(text, known_tokens):
@@ -84,30 +86,39 @@ def eval(tokens, known_functions, default_args=None):
 
                 try:
                     evaled = func(arg_to_function)
-                    args.append((evaled, func.__annotations__.get('return', None)))
+                    return_type = func.__annotations__.get('return', None)
+                    args.append((evaled, return_type))
                 except Exception as e:
                     errors.append((function_name, e))
 
     return {
         'action': known_functions[first_function_name],
-        'args' : args,
+        'args': args,
         'errors': errors
     }
-
 
 
 def exception_error_messages(errors) -> str:
     message = f'I got the following errors:\n'
     message += '```\n'
-    message += '\n'.join(f'- {func_name} threw {error}' for (func_name, error) in errors)
+
+    message += '\n'.join(
+        f'- {func_name} threw {error}' for (func_name, error) in errors
+    )
+
     message += '\n```'
 
     return message
 
+
 def mismatching_args_messages(action, annotations, args) -> str:
-    message = f'I wanted things to look like for function `{action.__name__}`:\n'
+    message = f'I wanted things to look like for function `{action.__name__}`:\n'  # noqa: E501
     message += '```\n'
-    message += '\n'.join(f'- {arg_name} : {type}' for (arg_name, type) in annotations.items())
+
+    message += '\n'.join(
+        f'- {arg_name} : {type}' for (arg_name, type) in annotations.items()
+    )
+
     message += '\n```'
 
     message += "\nBut you gave me:\n"
@@ -116,16 +127,19 @@ def mismatching_args_messages(action, annotations, args) -> str:
     message += '\n```'
 
     if len(annotations) < len(args):
-        return f'too many args too many many args\n{message}'
+        return f'Too many arguments!\n{message}'
     else:
-        return f'we need some more args in here! we need some more args in here\n{message}'
+        return f'Need some more arguments!\n{message}'
+
 
 def mismatching_types_messages(action, annotations, args) -> str:
     messages = []
 
-    for ((arg, type), (arg_name, annotation)) in zip(args, annotations.items()):
+    for ((arg, type), (arg_name, annotation)) in zip(args, annotations.items()):  # noqa: E501
         if type != annotation:
             messages.append(f'Type mistmach for function `{action.__name__}')
-            messages.append(f'You tried to give me a `{type}` but I wanted a `{annotation}` for the arg `{arg_name}`!')
+            messages.append(
+                f'You tried to give me a `{type}` but I wanted a `{annotation}` for the arg `{arg_name}`!'  # noqa: E501
+            )
 
     return '\n'.join(messages)
