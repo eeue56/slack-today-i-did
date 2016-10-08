@@ -27,8 +27,10 @@ class GenericSlackBot(BetterSlack):
 
         self.command_history = CommandHistory()
 
-    def is_direct_message(self, message):
-        return message['channel'].startswith('D')
+    def is_direct_message(self, channel):
+        """ Direct messages start with `D`
+        """
+        return channel.startswith('D')
 
     def was_directed_at_me(self, text):
         return text.startswith(f'<@{self.user_id}>')
@@ -138,7 +140,7 @@ class GenericSlackBot(BetterSlack):
         self._last_sender = message.get('user', None)
 
         # if it's a direct message, parse it differently
-        if self.is_direct_message(message):
+        if self.is_direct_message(message['channel']):
             return self.parse_direct_message(message)
 
         return self._actually_parse_message(message)

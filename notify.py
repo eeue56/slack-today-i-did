@@ -20,6 +20,7 @@ class Notification(object):
 
         self.patterns[person].append(pattern)
 
+
     def forget_pattern(self, person: str, pattern: str) -> None:
         """ stop notifying a person for a given pattern 
         """
