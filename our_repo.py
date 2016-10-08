@@ -6,7 +6,7 @@ such as the number of 0.16/0.17 files
 
 import os
 import glob
-from typing import List, Tuple, Dict
+from typing import List, Dict
 from enum import Enum
 
 
@@ -24,7 +24,7 @@ class OurRepo(object):
         url = f'https://{self.token}@github.com/{self.org}/{self.repo}.git'
         os.system(f'git clone --depth 1 {url}')
         os.chdir(self.repo)
-        os.system(f'git remote set-url origin url')
+        os.system(f'git remote set-url origin {url}')
 
     def _git_clone(self, branch_name: str = 'master') -> None:
         os.system(f'git remote set-branches origin {branch_name}')

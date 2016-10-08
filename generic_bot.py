@@ -11,7 +11,7 @@ To add a new function:
 import copy
 import html
 
-from typing import List, Tuple
+from typing import List
 
 from better_slack import BetterSlack
 from command_history import CommandHistory

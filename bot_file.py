@@ -7,13 +7,12 @@ To add a new function:
     - You must add type annotitions for the bot to match args up correctly
 
 """
-
 import time
 import datetime
 import json
 import re
 
-from typing import List, Tuple
+from typing import List
 
 from rollbar import Rollbar
 from reports import Report
