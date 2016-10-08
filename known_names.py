@@ -1,5 +1,6 @@
 import json
-from typing import List, Tuple
+from typing import List
+
 
 class KnownNames(object):
     """ Alias a person to a group of names, with saving and loading from disk
@@ -28,5 +29,4 @@ class KnownNames(object):
 
     def save_to_file(self, filename: str) -> None:
         with open(filename, 'w') as f:
-            json.dump({ 'people' :  self.people }, f)
-
+            json.dump({'people': self.people}, f)
