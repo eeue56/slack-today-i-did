@@ -11,7 +11,7 @@ import datetime
 import json
 import re
 
-from typing import List, Any
+from typing import List, Dict, Any
 
 from slack_today_i_did.rollbar import Rollbar
 from slack_today_i_did.reports import Report
