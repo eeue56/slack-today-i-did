@@ -382,8 +382,8 @@ class TodayIDidBot(GenericSlackBot):
         self.sessions.save_to_file(self.session_file)
 
         message = """
-Started a session for you. Send a DM to me with what you're working on throughout the day.
-Use `end-session` to finish the session!
+Started a session for you. Send a DMs to me with what you're working on throughout the day.
+Tell me `end-session` to finish the session and post it here!
 """
         self.send_channel_message(channel, message.strip())
 
