@@ -7,4 +7,4 @@ python3 -c "import main"
 flake8 .
 
 # run doctest
-python3 -m doctest *.py **/*.py
+python3 -m doctest -v *.py **/*.py
