@@ -152,7 +152,7 @@ class Sessions(object):
         except FileNotFoundError:
             return
 
-        for (name, session) in as_json['patterns'].items():
+        for (name, session) in as_json['sessions'].items():
             self.sesssions[name] = session
 
     def save_to_file(self, filename: str) -> None:
