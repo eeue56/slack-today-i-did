@@ -142,7 +142,7 @@ class Sessions(object):
         session_info = self.sessions.pop(person)
 
         with open(filename, 'w') as f:
-            json.dump(session_info)
+            json.dump(session_info, f)
 
     def load_from_file(self, filename: str) -> None:
         """ Load people:session from a file """
