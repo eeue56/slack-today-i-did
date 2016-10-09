@@ -13,13 +13,13 @@ import re
 
 from typing import List
 
-from rollbar import Rollbar
-from reports import Report
-from generic_bot import GenericSlackBot
-from known_names import KnownNames
-from notify import Notification
+from slack_today_i_did.rollbar import Rollbar
+from slack_today_i_did.reports import Report
+from slack_today_i_did.generic_bot import GenericSlackBot
+from slack_today_i_did.known_names import KnownNames
+from slack_today_i_did.notify import Notification
 
-import self_aware
+import slack_today_i_did.self_aware as self_aware
 
 
 class TodayIDidBot(GenericSlackBot):

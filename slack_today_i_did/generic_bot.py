@@ -13,12 +13,12 @@ import html
 
 from typing import List
 
-from better_slack import BetterSlack
-from command_history import CommandHistory
+from slack_today_i_did.better_slack import BetterSlack
+from slack_today_i_did.command_history import CommandHistory
 
-import self_aware
+import slack_today_i_did.self_aware as self_aware
 
-import parser
+import slack_today_i_did.parser as parser
 
 
 class GenericSlackBot(BetterSlack):

@@ -1,7 +1,7 @@
 import json
 import asyncio
-from bot_file import TodayIDidBot
-from our_repo import ElmRepo
+from slack_today_i_did.bot_file import TodayIDidBot
+from slack_today_i_did.our_repo import ElmRepo
 import os
 
 
