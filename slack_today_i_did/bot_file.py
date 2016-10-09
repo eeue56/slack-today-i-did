@@ -394,5 +394,5 @@ class TodayIDidBot(GenericSlackBot):
         entry = self.sessions.get_entry(person)
 
         message = f'Ended a session for the user <@{person}>. They said the following:\n'
-        message += '\n'.join(entry.messages)
-        self.send_channel_message(entry.channel, message)
+        message += '\n'.join(entry['messages'])
+        self.send_channel_message(entry['channel'], message)
