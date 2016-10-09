@@ -7,7 +7,6 @@ To add a new function:
     - You must add type annotitions for the bot to match args up correctly
 
 """
-import time
 import datetime
 import json
 import re

@@ -37,7 +37,7 @@ def tokens_with_index(known_tokens, message):
     build = []
 
     start_index = 0
-    end_index = 0 
+    end_index = 0
 
     for word in message.split(' '):
         if word in known_tokens:
