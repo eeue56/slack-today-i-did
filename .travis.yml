@@ -2,11 +2,13 @@ language: python
 python:
   - "nightly" # currently points to 3.6-dev
 # command to install dependencies
-install: 
+install:
   - "pip install -r requirements.txt"
   - "pip install flake8"
   - "pip install git+https://github.com/PyCQA/pyflakes.git"
   - "pip install pytest"
 # command to run tests
-script: 
+script:
   - "./run_tests.sh"
+notifications:
+  email: false
