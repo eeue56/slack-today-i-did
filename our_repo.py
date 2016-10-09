@@ -1,11 +1,12 @@
 """
-This file lets you do things with a repo. At the moment, the ElmRepo class can be used
-in order to get meta info on Elm files in a repo, such as the number of 0.16/0.17 files
+This file lets you do things with a repo. At the moment, the ElmRepo class
+can be used in order to get meta info on Elm files in a repo,
+such as the number of 0.16/0.17 files
 """
 
 import os
 import glob
-from typing import List, Tuple, Dict
+from typing import List, Dict
 from enum import Enum
 
 
@@ -20,9 +21,10 @@ class OurRepo(object):
         os.makedirs(self.folder, exist_ok=True)
 
     def _git_init(self) -> None:
-        os.system(f'git clone --depth 1 https://{self.token}@github.com/{self.org}/{self.repo}.git')
+        url = f'https://{self.token}@github.com/{self.org}/{self.repo}.git'
+        os.system(f'git clone --depth 1 {url}')
         os.chdir(self.repo)
-        os.system(f'git remote set-url origin https://{self.token}@github.com/{self.org}/{self.repo}.git')
+        os.system(f'git remote set-url origin {url}')
 
     def _git_clone(self, branch_name: str = 'master') -> None:
         os.system(f'git remote set-branches origin {branch_name}')
@@ -60,7 +62,7 @@ class ElmVersion(Enum):
 class ElmRepo(OurRepo):
     def __init__(self, *args, **kwargs):
         OurRepo.__init__(self, *args, **kwargs)
-        self._known_files = { ElmVersion.v_016 : [], ElmVersion.v_017 : []}
+        self._known_files = {ElmVersion.v_016: [], ElmVersion.v_017: []}
 
     def get_elm_files(self) -> List[str]:
         return glob.glob(f'{self.repo_dir}/**/*.elm', recursive=True)
@@ -87,20 +89,27 @@ class ElmRepo(OurRepo):
 
     def get_files_for_017(self, pattern: str) -> List[str]:
         pattern = pattern.replace('.', '/')
-        all_files = glob.glob(f'{self.repo_dir}/**/{pattern}.elm', recursive=True)
+        all_files = glob.glob(
+            f'{self.repo_dir}/**/{pattern}.elm',
+            recursive=True
+        )
 
-        return [ filename for filename in all_files
+        return [
+            filename for filename in all_files
             if self.what_kinda_file(filename) == ElmVersion.v_017
         ]
 
-    def get_017_porting_breakdown(self, pattern: str) -> Dict[str,Dict[str, int]]:
+    def get_017_porting_breakdown(self, pattern: str) -> Dict[str, Dict[str, int]]:  # noqa: E501
         pattern = pattern.replace('.', '/')
-        all_files = glob.glob(f'{self.repo_dir}/**/{pattern}.elm', recursive=True)
+        all_files = glob.glob(
+            f'{self.repo_dir}/**/{pattern}.elm',
+            recursive=True
+        )
 
-        return { filename : self.how_hard_to_port(filename) for filename in all_files
+        return {
+            filename: self.how_hard_to_port(filename) for filename in all_files
             if self.what_kinda_file(filename) == ElmVersion.v_016
         }
-
 
     def how_hard_to_port(self, filename: str) -> Dict[str, int]:
         """ returns a breakdown of how hard a file is to port 0.16 -> 0.17 """
@@ -125,8 +134,6 @@ class ElmRepo(OurRepo):
 
         return breakdown
 
-
-
     def what_kinda_file(self, filename: str) -> ElmVersion:
         """ if a filename is known to be 0.16 or 0.17, return that const
             otherwise, go through line by line to try and find some identifiers
@@ -136,7 +143,6 @@ class ElmRepo(OurRepo):
 
         if filename in self._known_files[ElmVersion.v_017]:
             return ElmVersion.v_017
-
 
         with open(filename) as f:
             for line in f:

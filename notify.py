@@ -1,7 +1,7 @@
 import json
-from typing import List, Tuple
-
+from typing import List
 import re
+
 
 class Notification(object):
     """ Allows you to register multiple regex patterns with a person
@@ -14,15 +14,14 @@ class Notification(object):
     def add_pattern(self, person: str, pattern: str) -> None:
         """ register a pattern to notify a given person
         """
-        
+
         if person not in self.patterns:
             self.patterns[person] = []
 
         self.patterns[person].append(pattern)
 
-
     def forget_pattern(self, person: str, pattern: str) -> None:
-        """ stop notifying a person for a given pattern 
+        """ stop notifying a person for a given pattern
         """
 
         if person not in self.patterns:
@@ -32,7 +31,7 @@ class Notification(object):
             self.patterns[person].remove(pattern)
 
     def who_wants_it(self, text: str) -> None:
-        """ returns a list of people that want to be notified by 
+        """ returns a list of people that want to be notified by
             a message that matches any of the registered patterns
         """
         who_wants_it = []
@@ -66,4 +65,4 @@ class Notification(object):
     def save_to_file(self, filename: str) -> None:
         """ save people:patterns to a file """
         with open(filename, 'w') as f:
-            json.dump({ 'patterns' :  self.patterns }, f)
+            json.dump({'patterns': self.patterns}, f)

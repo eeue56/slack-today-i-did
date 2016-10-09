@@ -1,8 +1,19 @@
 import json
 from typing import Tuple
+import time
+import datetime
+
 
 class Report(object):
-    def __init__(self, channel, name:str, time_to_run: Tuple[int,int], people, wait: Tuple[int, int], time_run=None):
+    def __init__(
+            self,
+            channel: str,
+            name: str,
+            time_to_run: Tuple[int, int],
+            people,
+            wait: Tuple[int, int],
+            time_run=None
+    ):
         self.name = name
         self.people_to_bother = people
         self.channel = channel
@@ -31,7 +42,10 @@ class Report(object):
             return False
 
         current_time = time.time()
-        time_now_string = time.strftime("%j:%Y %H:%M:", time.gmtime(current_time))
+        time_now_string = time.strftime(
+            "%j:%Y %H:%M:",
+            time.gmtime(current_time)
+        )
 
         hour_mins = time_now_string.split(' ')[1].split(':')
         (hours, minutes) = hour_mins[0], hour_mins[1]
@@ -43,11 +57,10 @@ class Report(object):
         if self.time_run is not None:
             day_year = time_now_string.split(' ')[0].split(':')
             (day_in_year, year) = day_year[0], day_year[1]
-            (time_run_day_in_year, time_run_year) = self.time_run.strftime('%j:%Y').split(':')
+            (time_run_day_in_year, time_run_year) = self.time_run.strftime('%j:%Y').split(':')  # noqa: E501
 
-            if int(year) ==  int(time_run_year) and int(day_in_year) == int(time_run_day_in_year):
+            if int(year) == int(time_run_year) and int(day_in_year) == int(time_run_day_in_year):  # noqa: E501
                 return False
-
 
         self.is_ended = False
         return True
@@ -60,11 +73,12 @@ class Report(object):
         time_now = time.strftime("%H:%M:", time.gmtime(current_time))
         time_now = (int(time_now.split(':')[0]), int(time_now.split(':')[1]))
 
-        if time_now < (self.time_to_run[0] + self.wait_for[0], self.time_to_run[1] + self.wait_for[1]):
+        end_time = (self.time_to_run[0] + self.wait_for[0], self.time_to_run[1] + self.wait_for[1])  # noqa: E501
+
+        if time_now < end_time:
             return False
 
         self.is_ended = True
-
         return True
 
     def is_for_user(self, user):
@@ -81,19 +95,18 @@ class Report(object):
         self.save_responses()
 
     def save_responses(self):
-        with open(f'reports/report-{self.name}-{self.channel}-{self.time_run}.json', 'w') as f:
+        with open(f'reports/report-{self.name}-{self.channel}-{self.time_run}.json', 'w') as f:  # noqa: E501
             json.dump(self.responses, f)
 
     def save(self):
-        with open(f'reports/report-config-{self.name}-{self.channel}.json', 'w') as f:
+        with open(f'reports/report-config-{self.name}-{self.channel}.json', 'w') as f:  # noqa: E501
             json.dump(f, self.as_dict())
 
     def as_dict(self):
         return {
-            'name' : self.name,
-            'channel' : self.channel,
-            'responses' : self.responses,
-            'people_to_bother' : self.people_to_bother,
-            'time_run' : (str(self.time_run) if self.time_run is not None else "")
+            'name': self.name,
+            'channel': self.channel,
+            'responses': self.responses,
+            'people_to_bother': self.people_to_bother,
+            'time_run': (str(self.time_run) if self.time_run is not None else "")  # noqa: E501
         }
-

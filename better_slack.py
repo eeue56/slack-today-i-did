@@ -2,8 +2,6 @@
 A slack client with much better async support
 """
 
-import time
-from typing import List
 from slackclient import SlackClient
 import websockets
 import asyncio
@@ -18,7 +16,19 @@ try:
 except:
     pass
 
+
+# we need to redefine these because the slackclient library is bad
+class SlackLoginError(Exception):
+    pass
+
+
+class SlackConnectionError(Exception):
+    pass
+
+
 class BetterSlack(SlackClient):
+    """ a better slack client with async/await support """
+
     def __init__(self, *args, **kwargs):
         SlackClient.__init__(self, *args, **kwargs)
         self.known_users = {}
@@ -68,20 +78,21 @@ class BetterSlack(SlackClient):
 
                 asyncio.sleep(0.5)
 
-
     async def get_message(self):
         incoming = await self.websocket.recv()
         json_data = ""
         json_data += "{0}\n".format(incoming)
         json_data = json_data.rstrip()
 
-
         data = []
+
         if json_data != '':
             for d in json_data.split('\n'):
                 data.append(json.loads(d))
+
         for item in data:
             self.process_changes(item)
+
         return data
 
     def ping(self):
@@ -123,18 +134,17 @@ class BetterSlack(SlackClient):
 
         return response['channel']['id']
 
-
-    def send_message(self, name, message) -> None:
+    def send_message(self, name: str, message: str) -> None:
         id = self.open_chat(name)
 
         json = {"type": "message", "channel": id, "text": message}
         self.send_to_websocket(json)
 
-    def send_channel_message(self, channel, message) -> None:
+    def send_channel_message(self, channel: str, message: str) -> None:
         json = {"type": "message", "channel": channel, "text": message}
         self.send_to_websocket(json)
 
-    def connected_user(self, username):
+    def connected_user(self, username: str) -> str:
         if username not in self.known_users:
             self.set_known_users()
 

@@ -2,7 +2,8 @@
 This file contains the bot itself
 
 To add a new function:
-    - add an entry in `known_functions`. The key is the command the bot will know, the value is the command to run
+    - add an entry in `known_functions`. The key is the command the bot
+        will know, the value is the command to run
     - You must add type annotitions for the bot to match args up correctly
 
 """
@@ -10,7 +11,7 @@ To add a new function:
 import copy
 import html
 
-from typing import List, Tuple
+from typing import List
 
 from better_slack import BetterSlack
 from command_history import CommandHistory
@@ -39,7 +40,11 @@ class GenericSlackBot(BetterSlack):
         self._actually_parse_message(message)
 
     async def main_loop(self):
-        await BetterSlack.main_loop(self, parser=self.parse_messages, on_tick=self.on_tick)
+        await BetterSlack.main_loop(
+            self,
+            parser=self.parse_messages,
+            on_tick=self.on_tick
+        )
 
     def known_tokens(self) -> List[str]:
         return list(self.known_functions().keys())
@@ -49,17 +54,17 @@ class GenericSlackBot(BetterSlack):
 
     def known_user_functions(self):
         return {
-            'bother-all-now' : self.bother_all_now,
-            'func-that-return' : self.functions_that_return,
-            'error-help' : self.error_help,
-            'help' : self.help,
-            'list' : self.list,
-            'reload-funcs' : self.reload_functions,
+            'bother-all-now': self.bother_all_now,
+            'func-that-return': self.functions_that_return,
+            'error-help': self.error_help,
+            'help': self.help,
+            'list': self.list,
+            'reload-funcs': self.reload_functions,
         }
 
     def known_statements(self):
         return {
-            '!!' : self.last_command_statement
+            '!!': self.last_command_statement
         }
 
     def on_tick(self):
@@ -85,7 +90,7 @@ class GenericSlackBot(BetterSlack):
 
         # we always give the channel as the first arg
         tokens = parser.tokenize(text, self.known_tokens())
-        args = [ (channel, str) ]
+        args = [(channel, str)]
 
         return parser.eval(tokens, self.known_functions(), default_args=args)
 
@@ -111,9 +116,16 @@ class GenericSlackBot(BetterSlack):
             error_messages.append(parser.exception_error_messages(errors))
 
         if len(annotations) != len(args):
-            error_messages.append(parser.mismatching_args_messages(action, annotations, args))
+            error_messages.append(
+                parser.mismatching_args_messages(action, annotations, args)
+            )
 
-        mismatching_types = parser.mismatching_types_messages(action, annotations, args)
+        mismatching_types = parser.mismatching_types_messages(
+            action,
+            annotations,
+            args
+        )
+
         if len(mismatching_types) > 0:
             error_messages.append(mismatching_types)
 
@@ -133,9 +145,12 @@ class GenericSlackBot(BetterSlack):
 
     def parse_message(self, message):
         # if we don't have any of the useful data, return early
-        if 'type' not in message or 'text' not in message or message['type'] != 'message':
+
+        if 'type' not in message or 'text' not in message:
             return None
 
+        if message['type'] != 'message':
+            return None
 
         self._last_sender = message.get('user', None)
 
@@ -150,14 +165,12 @@ class GenericSlackBot(BetterSlack):
             print(message)
             self.parse_message(message)
 
-
     def error_help(self, channel: str, problem: str) -> None:
         """ present an error help message """
         if problem == 'NO_TOKENS':
-            self.send_channel_message(channel, 'I\'m sorry, I couldn\'t find any tokens. Try using `help` or `list`')
+            self.send_channel_message(channel, 'I\'m sorry, I couldn\'t find any tokens. Try using `help` or `list`')  # noqa: E501
         else:
             self.send_channel_message(channel, f'Some problem: {problem}')
-
 
     def last_command_statement(self, channel: str) -> None:
         """ run the last command again """
@@ -172,9 +185,14 @@ class GenericSlackBot(BetterSlack):
         """ list known statements and functions """
 
         message = 'Main functions:\n'
-        message += '\n'.join( f'`{func}`'for func in self.known_user_functions())
+        message += '\n'.join(
+            f'`{func}`'for func in self.known_user_functions()
+        )
+
         message += '\nStatements:\n'
-        message += '\n'.join( f'`{func}`'for func in self.known_statements())
+        message += '\n'.join(
+            f'`{func}`'for func in self.known_statements()
+        )
 
         self.send_channel_message(channel, message)
 
@@ -185,10 +203,12 @@ class GenericSlackBot(BetterSlack):
         func = self.known_functions()[func_name]
         docs = ' '.join(line.strip() for line in func.__doc__.split('\n'))
 
-        message = f'`{func_name}` has the help message:\n{docs}\nAnd the type info:\n'
+        message = f'`{func_name}` has the help message:\n{docs}\nAnd the type info:\n'  # noqa: E501
         message += '```\n'
 
-        type_info = '\n'.join(f'- {arg_name} : {type}' for (arg_name, type) in func.__annotations__.items())
+        type_info = '\n'.join(
+            f'- {arg_name} : {type}' for (arg_name, type) in func.__annotations__.items()  # noqa: E501
+        )
 
         message += f'{type_info}\n```'
 
@@ -198,7 +218,7 @@ class GenericSlackBot(BetterSlack):
         """ reload the functions a bot knows """
         self_aware.restart_program()
 
-    def functions_that_return(self, channel:str, text: str) -> None:
+    def functions_that_return(self, channel: str, text: str) -> None:
         """ give a type, return functions that return things of that type
         """
         func_names = []
@@ -212,6 +232,6 @@ class GenericSlackBot(BetterSlack):
         message = f"The following functions return `{text}`:\n"
         message += '```\n'
         message += '\n'.join(name for (name, type) in func_names)
-        message +='\n```'
+        message += '\n```'
 
         self.send_channel_message(channel, message)
