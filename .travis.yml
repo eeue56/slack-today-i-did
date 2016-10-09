@@ -8,5 +8,4 @@ install:
   - "pip install git+https://github.com/PyCQA/pyflakes.git"
 # command to run tests
 script: 
-  - "python -c 'import main'"
-  - "flake8 ."
+  - "./run_tests.sh"
