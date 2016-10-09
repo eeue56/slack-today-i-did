@@ -91,6 +91,7 @@ class TodayIDidBot(GenericSlackBot):
 
         if self.sessions.has_running_session(user):
             self.sessions.add_message(user, text)
+            self.sessions.save_to_file(self.session_file)
 
     def on_tick(self):
         for (channel, reports) in self.reports.items():
