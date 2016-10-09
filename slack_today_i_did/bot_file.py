@@ -11,7 +11,7 @@ import datetime
 import json
 import re
 
-from typing import List
+from typing import List, Any
 
 from slack_today_i_did.rollbar import Rollbar
 from slack_today_i_did.reports import Report
@@ -30,17 +30,27 @@ class TodayIDidBot(GenericSlackBot):
         else:
             self.rollbar = Rollbar(rollbar_token)
 
-        self.repo = kwargs.pop('elm_repo', None)
-        self.known_names_file = kwargs.pop('known_names_file', 'names.json')
-        self.notify_file = kwargs.pop('notify_file', 'notify.json')
+        kwargs = self._setup_from_kwargs_and_remove_fields(**kwargs)
 
         GenericSlackBot.__init__(self, *args, **kwargs)
         self.reports = {}
         self._user_id = None
         self.name = 'today-i-did'
 
+        self._setup_known_names()
+        self._setup_notify()
+
+    def _setup_from_kwargs_and_remove_fields(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        self.repo = kwargs.pop('elm_repo', None)
+        self.known_names_file = kwargs.pop('known_names_file', 'names.json')
+        self.notify_file = kwargs.pop('notify_file', 'notify.json')
+        return kwargs
+
+    def _setup_known_names(self) -> None:
         self.known_names = KnownNames()
         self.known_names.load_from_file(self.known_names_file)
+
+    def _setup_notify(self) -> None:
         self.notify = Notification()
         self.notify.load_from_file(self.notify_file)
 
