@@ -14,7 +14,7 @@ import re
 from typing import List, Dict, Any
 
 from slack_today_i_did.rollbar import Rollbar
-from slack_today_i_did.reports import Report
+from slack_today_i_did.reports import Report, Sessions
 from slack_today_i_did.generic_bot import GenericSlackBot
 from slack_today_i_did.known_names import KnownNames
 from slack_today_i_did.notify import Notification
@@ -39,11 +39,13 @@ class TodayIDidBot(GenericSlackBot):
 
         self._setup_known_names()
         self._setup_notify()
+        self._setup_sessions()
 
     def _setup_from_kwargs_and_remove_fields(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         self.repo = kwargs.pop('elm_repo', None)
         self.known_names_file = kwargs.pop('known_names_file', 'names.json')
         self.notify_file = kwargs.pop('notify_file', 'notify.json')
+        self.session_file = kwargs.pop('session_file', 'sessions.json')
         return kwargs
 
     def _setup_known_names(self) -> None:
@@ -53,6 +55,10 @@ class TodayIDidBot(GenericSlackBot):
     def _setup_notify(self) -> None:
         self.notify = Notification()
         self.notify.load_from_file(self.notify_file)
+
+    def _setup_sessions(self) -> None:
+        self.sessions = Sessions()
+        self.sessions.load_from_file(self.session_file)
 
     def _actually_parse_message(self, message):
         GenericSlackBot._actually_parse_message(self, message)
@@ -82,6 +88,9 @@ class TodayIDidBot(GenericSlackBot):
                 if report.is_for_user(name):
                     report.add_response(name, text)
                     self.send_message(name, 'Thanks!')
+
+        if self.sessions.has_running_session(user):
+            self.sessions.add_message(user, text)
 
     def on_tick(self):
         for (channel, reports) in self.reports.items():
@@ -133,16 +142,21 @@ class TodayIDidBot(GenericSlackBot):
         return {
             'bother': self.bother,
             'bother-all-now': self.bother_all_now,
+            'report-responses': self.report_responses,
+            'responses': self.responses,
+
             'func-that-return': self.functions_that_return,
             'error-help': self.error_help,
             'help': self.help,
-            'responses': self.responses,
             'list': self.list,
+
             'reload-funcs': self.reload_functions,
             'reload': self.reload_branch,
+
             'house-party': self.party,
-            'report-responses': self.report_responses,
+
             'rollbar-item': self.rollbar_item,
+
             'elm-progress': self.elm_progress,
             'elm-progress-on': self.elm_progress_on,
             'find-017-matches': self.find_elm_017_matches,
@@ -152,7 +166,10 @@ class TodayIDidBot(GenericSlackBot):
             'know-me': self.add_known_name,
 
             'when-you-hear': self.when_you_hear,
-            'forget': self.stop_listening
+            'forget': self.stop_listening,
+
+            'start-session': self.start_session,
+            'end-session': self.end_session
         }
 
     def get_known_names(self, channel: str) -> None:
@@ -356,3 +373,26 @@ class TodayIDidBot(GenericSlackBot):
         """
         for report in self.reports.get(channel, {}).values():
             report.bother_people(self)
+
+    def start_session(self, channel: str) -> None:
+        """ starts a session for a user """
+        person = self._last_sender
+        self.sessions.start_session(person, channel)
+        self.sessions.save_to_file(self.session_file)
+
+    def end_session(self, channel: str) -> None:
+        """ ends a session for a user """
+
+        person = self._last_sender
+        if not self.sessions.has_running_session(person):
+            self.send_channel_message(channel, 'No session running.')
+            return
+
+        self.sessions.end_session(person)
+        self.sessions.save_to_file(self.session_file)
+
+        entry = self.sessions.get_entry(person)
+
+        message = f'Ended a session for the user <@{person}>. They said the following:\n'
+        message += '\n'.join(entry.messages)
+        self.send_channel_message(entry.channel, message)

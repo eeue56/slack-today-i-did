@@ -1,5 +1,5 @@
 import json
-from typing import Tuple
+from typing import Tuple, Dict, Any
 import time
 import datetime
 
@@ -110,3 +110,52 @@ class Report(object):
             'people_to_bother': self.people_to_bother,
             'time_run': (str(self.time_run) if self.time_run is not None else "")  # noqa: E501
         }
+
+
+class Sessions(object):
+    def __init__(self):
+        self.sessions = {}
+
+    def has_running_session(self, person: str) -> bool:
+        if person not in self.sessions:
+            return False
+
+        return self.sessions[person]['is_running']
+
+    def start_session(self, person: str, channel: str) -> None:
+        self.sessions[person] = {
+            'is_running': True,
+            'messages': [],
+            'channel': channel
+        }
+
+    def end_session(self, person: str) -> None:
+        self.sessions[person]['is_running'] = False
+
+    def add_message(self, person: str, message: str) -> None:
+        self.sessions[person]['messages'].append(message)
+
+    def get_entry(self, person: str) -> Dict[str, Any]:
+        return self.sessions[person]
+
+    def retire_session(self, person: str, filename: str) -> None:
+        session_info = self.sessions.pop(person)
+
+        with open(filename, 'w') as f:
+            json.dump(session_info)
+
+    def load_from_file(self, filename: str) -> None:
+        """ Load people:session from a file """
+        try:
+            with open(filename) as f:
+                as_json = json.load(f)
+        except FileNotFoundError:
+            return
+
+        for (name, session) in as_json['patterns'].items():
+            self.sesssions[name] = session
+
+    def save_to_file(self, filename: str) -> None:
+        """ save people:sessions to a file """
+        with open(filename, 'w') as f:
+            json.dump({'sessions': self.sessions}, f)
