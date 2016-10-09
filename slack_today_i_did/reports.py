@@ -153,7 +153,7 @@ class Sessions(object):
             return
 
         for (name, session) in as_json['sessions'].items():
-            self.sesssions[name] = session
+            self.sessions[name] = session
 
     def save_to_file(self, filename: str) -> None:
         """ save people:sessions to a file """
