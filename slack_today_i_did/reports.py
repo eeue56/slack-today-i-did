@@ -130,12 +130,21 @@ class Sessions(object):
         }
 
     def end_session(self, person: str) -> None:
+        if not self.has_running_session(person):
+            return
+
         self.sessions[person]['is_running'] = False
 
     def add_message(self, person: str, message: str) -> None:
+        if not self.has_running_session(person):
+            return
+
         self.sessions[person]['messages'].append(message)
 
     def get_entry(self, person: str) -> Dict[str, Any]:
+        if person not in self.sessions:
+            return {}
+
         return self.sessions[person]
 
     def retire_session(self, person: str, filename: str) -> None:
