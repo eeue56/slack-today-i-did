@@ -61,6 +61,6 @@ def test_session_retiring():
     assert len(sessions.sessions) == 0
 
     with open(MOCK_TEST_FILE) as f:
-        assert MOCK_PERSON in f.read()
+        assert MOCK_TEXT in f.read()
 
     os.remove(MOCK_TEST_FILE)
