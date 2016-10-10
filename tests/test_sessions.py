@@ -43,6 +43,7 @@ def test_session_saving_and_loading(tmpdir):
 
     sessions.start_session(MOCK_PERSON, MOCK_CHANNEL)
     sessions.add_message(MOCK_PERSON, MOCK_TEXT)
+    sessions.save_to_file(MOCK_TEST_FILE)
 
     new_sessions = reports.Sessions()
     new_sessions.load_from_file(MOCK_TEST_FILE)
@@ -60,6 +61,6 @@ def test_session_retiring():
     assert len(sessions.sessions) == 0
 
     with open(MOCK_TEST_FILE) as f:
-        assert MOCK_PERSON in MOCK_TEST_FILE.read()
+        assert MOCK_PERSON in f.read()
 
     os.remove(MOCK_TEST_FILE)
