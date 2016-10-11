@@ -4,14 +4,14 @@ from slack_today_i_did.bot_file import TodayIDidBot
 
 MOCK_PERSON = 'dave'
 MOCK_CHANNEL = '#durp'
-MOCK_TEXT = 'abcdflk'
+MOCK_START_SESSION_TEXT = 'start-session'
 MOCK_TEST_FILE = '.testdata_sessions'
 
 
 def test_session(mocker):
     mocked_channel_message = mocker.patch.object(TodayIDidBot, 'send_channel_message')
     mocked_start_session = mocker.spy(TodayIDidBot, 'start_session')
-    mocker.patch.object(TodayIDidBot, 'was_directed_at_me', return_value=False)
+    mocker.patch.object(TodayIDidBot, 'was_directed_at_me', return_value=True)
     mocker.patch.object(TodayIDidBot, 'user_name_from_id', return_value=MOCK_PERSON)
 
     bot = TodayIDidBot('', rollbar_token='', elm_repo=None)
