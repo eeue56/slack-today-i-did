@@ -19,7 +19,7 @@ def test_session(mocker):
     bot.parse_direct_message({
         'user': MOCK_PERSON,
         'channel': MOCK_CHANNEL,
-        'text': MOCK_TEXT
+        'text': MOCK_START_SESSION_TEXT
         })
 
     assert mocked_start_session.call_count == 1
