@@ -23,6 +23,6 @@ def test_session(mocker):
         'text': MOCK_START_SESSION_TEXT
         })
 
-    assert MOCK_CHANNEL == mocked_channel_message.call_args[0]
-    assert 'Started a session for you' in mocked_channel_message.call_args[1]
+    assert MOCK_CHANNEL == mocked_channel_message.call_args[0][0]
+    assert 'Started a session for you' in mocked_channel_message.call_args[0][1]
     assert mocked_channel_message.call_count == 1
