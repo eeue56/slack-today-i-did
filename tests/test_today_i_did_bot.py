@@ -13,6 +13,7 @@ def test_session(mocker):
     mocked_start_session = mocker.spy(TodayIDidBot, 'start_session')
     mocker.patch.object(TodayIDidBot, 'was_directed_at_me', return_value=True)
     mocker.patch.object(TodayIDidBot, 'user_name_from_id', return_value=MOCK_PERSON)
+    mocker.patch.object(TodayIDidBot, 'connected_user', return_value=MOCK_PERSON)
 
     bot = TodayIDidBot('', rollbar_token='', elm_repo=None)
 
