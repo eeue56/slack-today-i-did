@@ -63,15 +63,20 @@ class TodayIDidBot(GenericSlackBot):
     def _actually_parse_message(self, message):
         GenericSlackBot._actually_parse_message(self, message)
 
-        people_who_want_notification = None
-        try:
-            people_who_want_notification = self.notify.who_wants_it(message['text'])
-        except Exception as e:
-            pass
+        strings = []
+        for attachment in message.get('attachments', []):
+            strings.extend(self.attachment_strings(attachment))
+        strings.append(message['text'])
 
-        if people_who_want_notification is not None:
-            for person in people_who_want_notification:
-                self.ping_person(message['channel'], person)
+        people_who_want_notification = []
+
+        for string in strings:
+            people_who_want_notification.extend(self.notify.who_wants_it(string))
+
+        people_who_want_notification = set(people_who_want_notification)
+            
+        for person in people_who_want_notification:
+            self.ping_person(message['channel'], person)
 
     def parse_direct_message(self, message):
 
