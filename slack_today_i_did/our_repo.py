@@ -76,7 +76,7 @@ class ElmVersion(Enum):
 class ElmRepo(OurRepo):
     def __init__(self, *args, **kwargs):
         OurRepo.__init__(self, *args, **kwargs)
-        self._known_files = {ElmVersion.v_016: [], ElmVersion.v_017: [], ElmVersion.unknown}
+        self._known_files = {ElmVersion.v_016: [], ElmVersion.v_017: [], ElmVersion.unknown: []}
 
     def get_elm_files(self) -> List[str]:
         return glob.glob(f'{self.repo_dir}/**/*.elm', recursive=True)
