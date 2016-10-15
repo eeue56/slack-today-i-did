@@ -6,6 +6,7 @@ such as the number of 0.16/0.17 files
 
 import os
 import glob
+import subprocess
 from typing import List, Dict
 from enum import Enum
 
@@ -30,6 +31,11 @@ class OurRepo(object):
         os.system(f'git remote set-branches origin {branch_name}')
         os.system(f'git fetch --depth 1 origin {branch_name}')
         os.system(f'git checkout origin/{branch_name}')
+
+    def _last_time_touched(self, filename: str, branch_name: str = 'master') -> None:
+        git_log = f"git log -1 --pretty=format:%ct --branches {branch_name} {filename}"
+        output = subprocess.check_output(git_log, shell=True)
+        return output
 
     def get_ready(self, branch_name: str = 'master') -> None:
         current_dir = os.getcwd()
@@ -113,6 +119,12 @@ class ElmRepo(OurRepo):
 
     def how_hard_to_port(self, filename: str) -> Dict[str, int]:
         """ returns a breakdown of how hard a file is to port 0.16 -> 0.17 """
+
+        time_touched_on_master = self._last_time_touched(filename, 'master')
+        time_touched_on_017 = self._last_time_touched(filename, '0.17')
+
+        if time_touched_on_master < time_touched_on_017:
+            return {'already_ported': 0}
 
         breakdown = {}
 

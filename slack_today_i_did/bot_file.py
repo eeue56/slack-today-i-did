@@ -292,9 +292,13 @@ class TodayIDidBot(GenericSlackBot):
 
         files = self.repo.get_017_porting_breakdown(filename_pattern)
 
-        message += f'Here\'s the breakdown for the:'
+        message += f'Here\'s the breakdown:'
 
         for (filename, breakdown) in files.items():
+            if 'already_ported' in breakdown:
+                message += f'\n{filename} has already been ported! Use `git checkout 0.17 {filename}` to grab it'
+                continue
+
             total_hardness = sum(breakdown.values())
             message += f'\nfile {filename}: total hardness {total_hardness}\n'
             message += ' | '.join(
