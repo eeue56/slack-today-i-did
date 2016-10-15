@@ -34,7 +34,7 @@ class OurRepo(object):
 
     def _last_time_touched(self, filename: str, branch_name: str = 'master') -> None:
         current_dir = os.getcwd()
-        os.chdir(repo_dir)
+        os.chdir(self.repo_dir)
 
         git_log = f"git log -1 --pretty=format:%ct --branches {branch_name} {filename}"
         output = subprocess.check_output(git_log, shell=True)
