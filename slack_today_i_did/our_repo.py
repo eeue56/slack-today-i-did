@@ -39,15 +39,13 @@ class OurRepo(object):
             os.chdir(self.repo_dir)
             filename = filename.lstrip(self.repo_dir + '/')
             git_log = f"git checkout {branch_name} {filename} && cat {filename}"
-            print('log command', git_log, os.getcwd())
             output = subprocess.check_output(git_log, shell=True)
 
             os.system(f'git checkout master {filename}')
-            print('output', output, type(output))
         finally:
             print('error!')
             os.chdir(current_dir)
-        return output
+        return output.decode()
 
     def get_ready(self, branch_name: str = 'master') -> None:
         current_dir = os.getcwd()
