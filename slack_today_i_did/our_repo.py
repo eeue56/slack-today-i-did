@@ -30,10 +30,11 @@ class OurRepo(object):
     def _git_clone(self, branch_name: str = 'master') -> None:
         os.system(f'git remote set-branches origin {branch_name}')
         os.system(f'git fetch --depth 1 origin {branch_name}')
-        os.system(f'git checkout origin/{branch_name}')
+        os.system(f'git checkout {branch_name}')
 
     def _git_file_on_branch(self, filename: str, branch_name: str = 'master') -> str:
         current_dir = os.getcwd()
+        print('getting a branch')
         try:
             os.chdir(self.repo_dir)
             filename = filename.lstrip(self.repo_dir + '/')
@@ -132,6 +133,7 @@ class ElmRepo(OurRepo):
         """ returns a breakdown of how hard a file is to port 0.16 -> 0.17 """
 
         output_017 = self._git_file_on_branch(filename, '0.17')
+        print('out', output_017)
 
         for line in output_017.split('\n'):
             if not line.strip():

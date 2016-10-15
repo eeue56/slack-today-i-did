@@ -287,6 +287,7 @@ class TodayIDidBot(GenericSlackBot):
             Ports and signals are hardest, then native, then html.
         """
 
+        print('getting ready')
         self.repo.get_ready()
         message = "We have found the following filenames:\n"
 
