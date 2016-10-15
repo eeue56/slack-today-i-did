@@ -43,7 +43,7 @@ class OurRepo(object):
             print('output', output, type(output))
         finally:
             os.chdir(current_dir)
-        return output
+        return int(output)
 
     def get_ready(self, branch_name: str = 'master') -> None:
         current_dir = os.getcwd()
