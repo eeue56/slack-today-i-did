@@ -32,18 +32,18 @@ class OurRepo(object):
         os.system(f'git fetch --depth 1 origin {branch_name}')
         os.system(f'git checkout origin/{branch_name}')
 
-    def _last_time_touched(self, filename: str, branch_name: str = 'master') -> str:
+    def _git_file_on_branch(self, filename: str, branch_name: str = 'master') -> str:
         current_dir = os.getcwd()
         try:
             os.chdir(self.repo_dir)
             filename = filename.lstrip(self.repo_dir + '/')
-            git_log = f"git log -1 --pretty=format:%ct {branch_name} {filename}"
+            git_log = f"git checkout {branch_name} {filename} && cat filename"
             print('log command', git_log, os.getcwd())
             output = subprocess.check_output(git_log, shell=True)
             print('output', output, type(output))
         finally:
             os.chdir(current_dir)
-        return int(output)
+        return output
 
     def get_ready(self, branch_name: str = 'master') -> None:
         current_dir = os.getcwd()
@@ -128,11 +128,14 @@ class ElmRepo(OurRepo):
     def how_hard_to_port(self, filename: str) -> Dict[str, int]:
         """ returns a breakdown of how hard a file is to port 0.16 -> 0.17 """
 
-        time_touched_on_master = self._last_time_touched(filename, 'master')
-        time_touched_on_017 = self._last_time_touched(filename, '0.17')
+        output_017 = self._git_file_on_branch(filename, '0.17')
 
-        if time_touched_on_master < time_touched_on_017:
-            return {'already_ported': 0}
+        for line in output_017.split('\n'):
+            if not line.strip():
+                continue
+
+            if self._elm_version_text(line) == ElmVersion.v_017:
+                return {'already_ported': 0}
 
         breakdown = {}
 
@@ -154,6 +157,14 @@ class ElmRepo(OurRepo):
 
         return breakdown
 
+    def _elm_version_text(line) -> ElmVersion:
+        if 'exposing' in line:
+            return ElmVersion.v_017
+        if 'where' in line:
+            return ElmVersion.v_016
+
+        return ElmVersion.unknown
+
     def what_kinda_file(self, filename: str) -> ElmVersion:
         """ if a filename is known to be 0.16 or 0.17, return that const
             otherwise, go through line by line to try and find some identifiers
@@ -167,10 +178,7 @@ class ElmRepo(OurRepo):
         with open(filename) as f:
             for line in f:
                 if line.strip():
-                    if 'exposing' in line:
-                        self._known_files[ElmVersion.v_017].append(filename)
-                        return ElmVersion.v_017
-                    if 'where' in line:
-                        self._known_files[ElmVersion.v_016].append(filename)
-                        return ElmVersion.v_016
+                    elm_version = self._elm_version_text(line)
+                    self._known_files[elm_version].append(filename)
+
         return ElmVersion.unknown
