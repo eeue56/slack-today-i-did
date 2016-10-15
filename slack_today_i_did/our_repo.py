@@ -37,7 +37,7 @@ class OurRepo(object):
         try:
             os.chdir(self.repo_dir)
             filename = filename.lstrip(self.repo_dir + '/')
-            git_log = f"git log -1 --pretty=format:%ct --branches {branch_name} {filename}"
+            git_log = f"git log -1 --pretty=format:%ct {branch_name} {filename}"
             print('log command', git_log, os.getcwd())
             output = subprocess.check_output(git_log, shell=True)
             print('output', output, type(output))
