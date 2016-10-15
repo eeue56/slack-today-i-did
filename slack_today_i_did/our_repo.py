@@ -126,7 +126,6 @@ class ElmRepo(OurRepo):
 
         return {
             filename: self.how_hard_to_port(filename) for filename in all_files
-            if self.what_kinda_file(filename) == ElmVersion.v_016
         }
 
     def how_hard_to_port(self, filename: str) -> Dict[str, int]:
