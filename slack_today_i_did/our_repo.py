@@ -32,14 +32,17 @@ class OurRepo(object):
         os.system(f'git fetch --depth 1 origin {branch_name}')
         os.system(f'git checkout origin/{branch_name}')
 
-    def _last_time_touched(self, filename: str, branch_name: str = 'master') -> None:
+    def _last_time_touched(self, filename: str, branch_name: str = 'master') -> str:
         current_dir = os.getcwd()
-        os.chdir(self.repo_dir)
-        filename = filename.lstrip(self.repo_dir + '/')
-        git_log = f"git log -1 --pretty=format:%ct --branches {branch_name} {filename}"
-        output = subprocess.check_output(git_log, shell=True)
-
-        os.chdir(current_dir)
+        try:
+            os.chdir(self.repo_dir)
+            filename = filename.lstrip(self.repo_dir + '/')
+            git_log = f"git log -1 --pretty=format:%ct --branches {branch_name} {filename}"
+            print('log command', git_log, os.getcwd())
+            output = subprocess.check_output(git_log, shell=True)
+            print('output', output, type(output))
+        finally:
+            os.chdir(current_dir)
         return output
 
     def get_ready(self, branch_name: str = 'master') -> None:
