@@ -157,7 +157,7 @@ class ElmRepo(OurRepo):
 
         return breakdown
 
-    def _elm_version_text(line) -> ElmVersion:
+    def _elm_version_text(self, line) -> ElmVersion:
         if 'exposing' in line:
             return ElmVersion.v_017
         if 'where' in line:
