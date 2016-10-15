@@ -34,7 +34,6 @@ class OurRepo(object):
 
     def _git_file_on_branch(self, filename: str, branch_name: str = 'master') -> str:
         current_dir = os.getcwd()
-        print('getting a branch')
         try:
             os.chdir(self.repo_dir)
             filename = filename.lstrip(self.repo_dir + '/')
@@ -43,7 +42,6 @@ class OurRepo(object):
 
             os.system(f'git checkout master {filename}')
         finally:
-            print('error!')
             os.chdir(current_dir)
         return output.decode()
 
@@ -130,14 +128,16 @@ class ElmRepo(OurRepo):
         """ returns a breakdown of how hard a file is to port 0.16 -> 0.17 """
 
         output_017 = self._git_file_on_branch(filename, '0.17')
-        print('out', output_017)
 
         for line in output_017.split('\n'):
             if not line.strip():
                 continue
 
-            if self._elm_version_text(line) == ElmVersion.v_017:
+            elm_version = self._elm_version_text(line)
+            if elm_version == ElmVersion.v_017:
                 return {'already_ported': 0}
+            elif elm_version == ElmVersion.v_016:
+                break
 
         breakdown = {}
 

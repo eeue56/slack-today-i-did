@@ -287,7 +287,6 @@ class TodayIDidBot(GenericSlackBot):
             Ports and signals are hardest, then native, then html.
         """
 
-        print('getting ready')
         self.repo.get_ready()
         message = "We have found the following filenames:\n"
 
@@ -296,8 +295,10 @@ class TodayIDidBot(GenericSlackBot):
         message += f'Here\'s the breakdown:'
 
         for (filename, breakdown) in files.items():
+            filename = filename.lstrip(self.repo.repo_dir + '/')
+
             if 'already_ported' in breakdown:
-                message += f'\n{filename} has already been ported! Use `git checkout 0.17 {filename}` to grab it'
+                message += f'\n{filename} has already been ported!\nUse `git checkout 0.17 {filename}` to grab it'
                 continue
 
             total_hardness = sum(breakdown.values())
