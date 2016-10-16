@@ -197,9 +197,8 @@ class GenericSlackBot(BetterSlack):
         self.send_channel_message(channel, message)
 
     def help(self, channel: str, func_name: str) -> None:
-        """ given a func_name preceeded with `~`, I'll tell you about it
+        """ given a func_name, I'll tell you about it
         """
-        func_name = func_name.strip()[1:]
         func = self.known_functions()[func_name]
         docs = ' '.join(line.strip() for line in func.__doc__.split('\n'))
 

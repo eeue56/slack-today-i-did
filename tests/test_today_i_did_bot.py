@@ -18,6 +18,22 @@ def bot_with_message(mocker):
     return bot
 
 
+# TODO: this probably should be tested in a file named test_generic_bot.py
+def test_help(mocker, bot_with_message):
+    mocked_channel_message = mocker.patch.object(
+        bot_with_message, 'send_channel_message')
+
+    bot_with_message.parse_direct_message({
+        'user': MOCK_PERSON,
+        'channel': MOCK_CHANNEL,
+        'text': 'help help'
+        })
+
+    assert MOCK_CHANNEL == mocked_channel_message.call_args[0][0]
+    assert "I'll tell you about it" in mocked_channel_message.call_args[0][1]
+    assert mocked_channel_message.call_count == 1
+
+
 def test_start_session(mocker, bot_with_message):
     mocked_channel_message = mocker.patch.object(
         bot_with_message, 'send_channel_message')
