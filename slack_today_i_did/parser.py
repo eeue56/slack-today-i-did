@@ -140,7 +140,7 @@ def mismatching_types_messages(action, annotations, args) -> str:
 
     for ((arg, arg_type), (arg_name, annotation)) in zip(args, annotations.items()):  # noqa: E501
         if arg_type != annotation:
-            messages.append(f'Type mistmach for function `{action.__name__}')
+            messages.append(f'Type mistmach for function `{action.__name__}`')
             messages.append(
                 f'You tried to give me a `{type}` but I wanted a `{annotation}` for the arg `{arg_name}`!'  # noqa: E501
             )
