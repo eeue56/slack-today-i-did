@@ -206,7 +206,8 @@ class GenericSlackBot(BetterSlack):
         message += '```\n'
 
         type_info = '\n'.join(
-            f'- {arg_name} : {type}' for (arg_name, type) in func.__annotations__.items()  # noqa: E501
+            f'- {arg_name} : {arg_type}'
+            for (arg_name, arg_type) in func.__annotations__.items()
         )
 
         message += f'{type_info}\n```'
