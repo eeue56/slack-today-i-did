@@ -18,7 +18,7 @@ def bot_with_message(mocker):
     return bot
 
 
-def test_session(mocker, bot_with_message):
+def test_start_session(mocker, bot_with_message):
     mocked_channel_message = mocker.patch.object(
         bot_with_message, 'send_channel_message')
 
