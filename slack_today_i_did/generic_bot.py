@@ -117,8 +117,10 @@ class GenericSlackBot(BetterSlack):
         if len(errors) > 0:
             error_messages.append(parser.exception_error_messages(errors))
 
-        num_defaults = len(action.__defaults__) if action.__defaults__ else 0
-        if (len(annotations) - num_defaults) > len(args):
+        # check arity mismatch
+        num_keyword_args = len(action.__defaults__) if action.__defaults__ else 0
+        num_positional_args = len(annotations) - num_keyword_args
+        if num_positional_args > len(args):
             error_messages.append(
                 parser.mismatching_args_messages(action, annotations, args)
             )
