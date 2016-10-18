@@ -149,3 +149,16 @@ class BetterSlack(SlackClient):
             self.set_known_users()
 
         return self.known_users[username]
+
+    def attachment_strings(self, attachment):
+        strings = []
+
+        for (k, v) in attachment.items():
+            if isinstance(v, str):
+                strings.append(v)
+
+        for field in attachment.get('fields', []):
+            strings.append(field['title'])
+            strings.append(field['value'])
+
+        return strings
