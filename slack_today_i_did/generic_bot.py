@@ -22,6 +22,9 @@ import slack_today_i_did.parser as parser
 
 
 class GenericSlackBot(BetterSlack):
+    _user_id = None
+    _last_sender = None
+
     def __init__(self, *args, **kwargs):
         BetterSlack.__init__(self, *args, **kwargs)
         self.name = 'generic-slack-bot'
@@ -54,7 +57,6 @@ class GenericSlackBot(BetterSlack):
 
     def known_user_functions(self):
         return {
-            'bother-all-now': self.bother_all_now,
             'func-that-return': self.functions_that_return,
             'error-help': self.error_help,
             'help': self.help,
@@ -115,7 +117,10 @@ class GenericSlackBot(BetterSlack):
         if len(errors) > 0:
             error_messages.append(parser.exception_error_messages(errors))
 
-        if len(annotations) != len(args):
+        # check arity mismatch
+        num_keyword_args = len(action.__defaults__) if action.__defaults__ else 0
+        num_positional_args = len(annotations) - num_keyword_args
+        if num_positional_args > len(args):
             error_messages.append(
                 parser.mismatching_args_messages(action, annotations, args)
             )
@@ -196,10 +201,13 @@ class GenericSlackBot(BetterSlack):
 
         self.send_channel_message(channel, message)
 
-    def help(self, channel: str, func_name: str) -> None:
-        """ given a func_name preceeded with `~`, I'll tell you about it
+    def help(self, channel: str, func_name: str = None) -> None:
+        """ given a func_name, I'll tell you about it
         """
-        func_name = func_name.strip()[1:]
+        if func_name is None:
+            self.list(channel)
+            return
+
         func = self.known_functions()[func_name]
         docs = ' '.join(line.strip() for line in func.__doc__.split('\n'))
 
@@ -207,7 +215,8 @@ class GenericSlackBot(BetterSlack):
         message += '```\n'
 
         type_info = '\n'.join(
-            f'- {arg_name} : {type}' for (arg_name, type) in func.__annotations__.items()  # noqa: E501
+            f'- {arg_name} : {arg_type}'
+            for (arg_name, arg_type) in func.__annotations__.items()
         )
 
         message += f'{type_info}\n```'

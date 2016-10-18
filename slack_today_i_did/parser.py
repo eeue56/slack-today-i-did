@@ -72,6 +72,10 @@ def eval(tokens, known_functions, default_args=None):
         first_function_name = 'error-help'
         args.append(('NO_TOKENS', str))
     # when we have stuff to work with!
+    elif 'help' == tokens[0][1]:
+        # treat the rest of the functions as args
+        first_function_name = tokens[0][1]
+        args.extend([(func_name, str) for (_, func_name, _) in tokens[1:]])
     else:
         first_function_name = tokens[0][1]
         first_arg = tokens[0][2].strip()
@@ -115,14 +119,14 @@ def mismatching_args_messages(action, annotations, args) -> str:
     message += '```\n'
 
     message += '\n'.join(
-        f'- {arg_name} : {type}' for (arg_name, type) in annotations.items()
+        f'- {arg_name} : {arg_type}' for (arg_name, arg_type) in annotations.items()
     )
 
     message += '\n```'
 
     message += "\nBut you gave me:\n"
     message += '```\n'
-    message += '\n'.join(f'- {arg} : {type}' for (arg, type) in args)
+    message += '\n'.join(f'- {arg} : {arg_type}' for (arg, arg_type) in args)
     message += '\n```'
 
     if len(annotations) < len(args):
@@ -134,9 +138,9 @@ def mismatching_args_messages(action, annotations, args) -> str:
 def mismatching_types_messages(action, annotations, args) -> str:
     messages = []
 
-    for ((arg, type), (arg_name, annotation)) in zip(args, annotations.items()):  # noqa: E501
-        if type != annotation:
-            messages.append(f'Type mistmach for function `{action.__name__}')
+    for ((arg, arg_type), (arg_name, annotation)) in zip(args, annotations.items()):  # noqa: E501
+        if arg_type != annotation:
+            messages.append(f'Type mistmach for function `{action.__name__}`')
             messages.append(
                 f'You tried to give me a `{type}` but I wanted a `{annotation}` for the arg `{arg_name}`!'  # noqa: E501
             )

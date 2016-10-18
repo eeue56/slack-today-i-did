@@ -68,3 +68,61 @@ def test_tokenize_on_tokens():
     assert second_token[0] == 11
     assert second_token[1] == 'NOW'
     assert second_token[2] == ''
+
+
+def test_eval_no_tokens():
+    known_funcs = {'error-help': lambda x:x}
+    stuff = parser.eval([], known_funcs)
+
+    assert stuff['action'] == known_funcs['error-help']
+    assert stuff['args'] == [('NO_TOKENS', str)]
+    assert stuff['errors'] == []
+
+
+def test_eval_help_not_in_known_funcs():
+    # `eval` trusts tokenize to have extracted
+    # only known function names into tokens
+    with pytest.raises(KeyError):
+        stuff = parser.eval([(0, 'help', ''), (0, 'hello', 'dave')], MOCK_TOKENS)
+
+
+def test_eval_help_with_arg():
+    funcs_with_help = dict(MOCK_TOKENS, help=lambda x:x)
+    tokens = parser.tokenize('help ' + TEXT_WITH_TOKENS, funcs_with_help)
+    stuff = parser.eval(tokens, funcs_with_help)
+
+    assert stuff['action'] == funcs_with_help['help']
+    assert stuff['args'] == [('hello', str), ('NOW', str)]
+    assert stuff['errors'] == []
+
+
+def test_eval_first_func_with_one_arg():
+    known_funcs = {'hello': lambda x:x}
+    stuff = parser.eval([(0, 'hello', 'world')], known_funcs)
+
+    assert stuff['action'] == known_funcs['hello']
+    assert stuff['args'] == [('world', str)]
+    assert stuff['errors'] == []
+
+
+def test_eval_second_func_with_one_arg():
+    known_funcs = {'cocoa': lambda x:x + 'cocoa', 'double': lambda x:x * 2}
+    known_funcs['double'].__annotations__['return'] = str
+
+    stuff = parser.eval([(0, 'cocoa', ''), (0, 'double', 'cream')], known_funcs)
+
+    assert stuff['action'] == known_funcs['cocoa']
+    assert stuff['args'] == [('creamcream', str)]
+    assert stuff['errors'] == []
+
+
+def test_eval_second_func_with_error():
+    known_funcs = {'cocoa': lambda x:x + 'cocoa', 'koan': lambda x: 1 / 0}
+
+    stuff = parser.eval([(0, 'cocoa', ''), (0, 'koan', '')], known_funcs)
+
+    assert stuff['action'] == known_funcs['cocoa']
+    assert stuff['args'] == []
+    assert len(stuff['errors']) == 1
+    assert stuff['errors'][0][0] == 'koan'
+    assert isinstance(stuff['errors'][0][1], ZeroDivisionError)

@@ -8,19 +8,19 @@ MOCK_START_SESSION_TEXT = 'start-session'
 MOCK_TEST_FILE = '.testdata_sessions'
 
 
-def test_session(mocker):
-    mocked_channel_message = mocker.patch.object(TodayIDidBot, 'send_channel_message')
-    mocker.patch.object(TodayIDidBot, 'was_directed_at_me', return_value=True)
-    mocker.patch.object(TodayIDidBot, 'user_name_from_id', return_value=MOCK_PERSON)
-    mocker.patch.object(TodayIDidBot, 'connected_user', return_value='TodayIDidBot')
+@pytest.fixture
+def bot():
+    return TodayIDidBot('', rollbar_token='', elm_repo=None)
 
-    bot = TodayIDidBot('', rollbar_token='', elm_repo=None)
-    bot._last_sender = MOCK_PERSON
 
-    bot.parse_direct_message({
-        'user': MOCK_PERSON,
-        'channel': MOCK_CHANNEL,
-        'text': MOCK_START_SESSION_TEXT
+def test_start_session(mocker, bot, message_context):
+    mocked_channel_message = mocker.patch.object(bot, 'send_channel_message')
+
+    with message_context(bot, sender=MOCK_PERSON):
+        bot.parse_direct_message({
+            'user': MOCK_PERSON,
+            'channel': MOCK_CHANNEL,
+            'text': MOCK_START_SESSION_TEXT
         })
 
     assert MOCK_CHANNEL == mocked_channel_message.call_args[0][0]

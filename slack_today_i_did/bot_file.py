@@ -34,7 +34,6 @@ class TodayIDidBot(GenericSlackBot):
 
         GenericSlackBot.__init__(self, *args, **kwargs)
         self.reports = {}
-        self._user_id = None
         self.name = 'today-i-did'
 
         self._setup_known_names()
