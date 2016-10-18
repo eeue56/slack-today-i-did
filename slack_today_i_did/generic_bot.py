@@ -82,7 +82,7 @@ class GenericSlackBot(BetterSlack):
 
         return self._user_id
 
-    def tokenize(self, text, channel):
+    def parse(self, text, channel):
         """ Take text, a default channel,
         """
 
@@ -93,31 +93,26 @@ class GenericSlackBot(BetterSlack):
             return None
 
         # we always give the channel as the first arg
+        args = [parser.Constant(channel, str)]
         tokens = parser.tokenize(text, self.known_tokens())
-        args = [(channel, str)]
-
-        return parser.eval(tokens, self.known_functions(), default_args=args)
+        return parser.parse(tokens, self.known_functions(), default_args=args)
 
     def _actually_parse_message(self, message):
         channel = message['channel']
         text = message['text']
 
-        stuff = self.tokenize(text, channel)
+        stuff = self.parse(text, channel)
 
         if stuff is None:
             return
 
         action = stuff['action']
         args = stuff['args']
-        errors = stuff.get('errors', [])
+        evaluate = stuff['evaluate']
 
         annotations = copy.deepcopy(action.__annotations__)
         annotations.pop('return')
         error_messages = []
-
-        # deal with exceptions running the command
-        if len(errors) > 0:
-            error_messages.append(parser.exception_error_messages(errors))
 
         # check arity mismatch
         num_keyword_args = len(action.__defaults__) if action.__defaults__ else 0
@@ -140,13 +135,19 @@ class GenericSlackBot(BetterSlack):
             self.send_channel_message(channel, '\n\n'.join(error_messages))
             return
 
-        func_args = [arg[0] for arg in args]
+        eval_result = evaluate(args)
+
+        # deal with exceptions running the command
+        if len(eval_result['errors']) > 0:
+            messages = parser.exception_error_messages(eval_result['errors'])
+            self.send_channel_message(channel, '\n\n'.join(messages))
+            return
 
         if action != self.known_statements()['!!']:
-            self.command_history.add_command(channel, action, func_args)
+            self.command_history.add_command(channel, action, eval_result['args'])
 
         try:
-            action(*func_args)
+            action(*eval_result['args'])
         except Exception as e:
             self.send_channel_message(channel, f'We got an error {e}!')
 
@@ -233,13 +234,18 @@ class GenericSlackBot(BetterSlack):
 
         self.send_channel_message(channel, message)
 
-    def help(self, channel: str, func_name: str = None) -> None:
-        """ given a func_name, I'll tell you about it
+    @parser.metafunc
+    def help(self, channel: str, args: List[parser.TopLevelArg]) -> None:
+        """ given a function name, I'll tell you about it
         """
-        if func_name is None:
+        if not len(args):
             self.list(channel)
             return
 
+        if isinstance(args[0], parser.Constant):
+            func_name = args[0].value
+        else:
+            func_name = args[0].func_name
         known_functions = self.known_functions()
 
         if func_name not in known_functions:
@@ -248,15 +254,17 @@ class GenericSlackBot(BetterSlack):
         func = known_functions[func_name]
         docs = ' '.join(line.strip() for line in func.__doc__.split('\n'))
 
-        message = f'`{func_name}` has the help message:\n{docs}\nAnd the type info:\n'  # noqa: E501
-        message += '```\n'
+        message = f'`{func_name}` has the help message:\n{docs}\n'
 
-        type_info = '\n'.join(
-            f'- {arg_name} : {arg_type}'
-            for (arg_name, arg_type) in func.__annotations__.items()
-        )
+        if not parser.is_metafunc(func):
+            message += 'And the type info:\n```\n'
 
-        message += f'{type_info}\n```'
+            type_info = '\n'.join(
+                f'- {arg_name} : {arg_type}'
+                for (arg_name, arg_type) in func.__annotations__.items()
+            )
+
+            message += f'{type_info}\n```'
 
         self.send_channel_message(channel, message)
 

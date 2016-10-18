@@ -1,3 +1,20 @@
+from typing import Any, TypeVar, List, NamedTuple, Union
+import functools
+
+
+Constant = NamedTuple('Constant', [('value', Any), ('return_type', type)])
+FuncCall = NamedTuple('FuncCall', [('func_name', str), ('args', List[str]), ('return_type', type)])
+TopLevelArg = Union[Constant, FuncCall]
+
+
+def metafunc(fn):
+    fn.is_metafunc = True
+    return fn
+
+
+def is_metafunc(fn):
+    return getattr(fn, 'is_metafunc', False)
+
 
 def fill_in_the_gaps(message, tokens):
     """
@@ -59,50 +76,64 @@ def tokenize(text, known_tokens):
     return tokens
 
 
-def eval(tokens, known_functions, default_args=None):
-    # when we can't find anything
-
+def parse(tokens, known_functions, default_args=None):
     if default_args is None:
         default_args = []
 
-    args = default_args
-    errors = []
+    more_args = []
 
+    # when we can't find anything
     if len(tokens) == 0:
         first_function_name = 'error-help'
-        args.append(('NO_TOKENS', str))
+        more_args.append(Constant('NO_TOKENS', str))
     # when we have stuff to work with!
-    elif 'help' == tokens[0][1]:
-        # treat the rest of the functions as args
-        first_function_name = tokens[0][1]
-        first_arg = tokens[0][2].strip()
-
-        if len(first_arg) > 0:
-            args.append((first_arg, str))
-
-        args.extend([(func_name, str) for (_, func_name, _) in tokens[1:]])
     else:
         first_function_name = tokens[0][1]
         first_arg = tokens[0][2].strip()
 
         if len(first_arg) > 0:
-            args.append((first_arg, str))
+            more_args.append(Constant(first_arg, str))
 
         if len(tokens) > 1:
             for (start_index, function_name, arg_to_function) in tokens[1:]:
                 func = known_functions[function_name]
+                actual_arg = [arg_to_function] if len(arg_to_function) > 0 else []
+                return_type = func.__annotations__.get('return', None)
+                more_args.append(FuncCall(function_name, actual_arg, return_type))
 
-                try:
-                    evaled = func(arg_to_function)
-                    return_type = func.__annotations__.get('return', None)
-                    args.append((evaled, return_type))
-                except Exception as e:
-                    errors.append((function_name, e))
+    action = known_functions[first_function_name]
+    evaluator = functools.partial(evaluate, known_functions)
+
+    if is_metafunc(action):
+        args = []
+        args.extend(default_args)
+        args.append(Constant(more_args, List[TopLevelArg]))
+    else:
+        args = default_args + more_args
 
     return {
-        'action': known_functions[first_function_name],
+        'action': action,
         'args': args,
-        'errors': errors
+        'evaluate': evaluator,
+    }
+
+
+def evaluate(known_functions, args):
+    result = []
+    errors = []
+
+    for arg in args:
+        if isinstance(arg, Constant):
+            result.append(arg.value)
+        elif isinstance(arg, FuncCall):
+            try:
+                result.append(known_functions[arg.func_name](*arg.args))
+            except Exception as e:
+                errors.append((arg.func_name, e))
+
+    return {
+        'args': result,
+        'errors': errors,
     }
 
 
@@ -143,11 +174,14 @@ def mismatching_args_messages(action, annotations, args) -> str:
 def mismatching_types_messages(action, annotations, args) -> str:
     messages = []
 
-    for ((arg, arg_type), (arg_name, annotation)) in zip(args, annotations.items()):  # noqa: E501
-        if arg_type != annotation:
+    for (arg, (arg_name, annotation)) in zip(args, annotations.items()):
+        if annotation != Any and not isinstance(annotation, TypeVar):
+            continue
+
+        if arg.return_type != annotation:
             messages.append(f'Type mistmach for function `{action.__name__}`')
             messages.append(
-                f'You tried to give me a `{type}` but I wanted a `{annotation}` for the arg `{arg_name}`!'  # noqa: E501
+                f'You tried to give me a `{arg.return_type}` but I wanted a `{annotation}` for the arg `{arg_name}`!'  # noqa: E501
             )
 
     return '\n'.join(messages)
