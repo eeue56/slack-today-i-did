@@ -75,6 +75,11 @@ def eval(tokens, known_functions, default_args=None):
     elif 'help' == tokens[0][1]:
         # treat the rest of the functions as args
         first_function_name = tokens[0][1]
+        first_arg = tokens[0][2].strip()
+
+        if len(first_arg) > 0:
+            args.append((first_arg, str))
+
         args.extend([(func_name, str) for (_, func_name, _) in tokens[1:]])
     else:
         first_function_name = tokens[0][1]

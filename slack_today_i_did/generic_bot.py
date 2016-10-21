@@ -19,6 +19,7 @@ from slack_today_i_did.command_history import CommandHistory
 import slack_today_i_did.self_aware as self_aware
 
 import slack_today_i_did.parser as parser
+import slack_today_i_did.text_tools as text_tools
 
 
 class GenericSlackBot(BetterSlack):
@@ -60,6 +61,7 @@ class GenericSlackBot(BetterSlack):
             'func-that-return': self.functions_that_return,
             'error-help': self.error_help,
             'help': self.help,
+            'possible-funcs': self.possible_funcs,
             'list': self.list,
             'reload-funcs': self.reload_functions,
         }
@@ -201,6 +203,32 @@ class GenericSlackBot(BetterSlack):
 
         self.send_channel_message(channel, message)
 
+    def possible_funcs(self, channel: str, name: str) -> None:
+        """ give me a name and I'll tell you funcs which are close """
+
+        known_functions = self.known_functions()
+
+        # default the length of the name
+        acceptable_score = len(name)
+
+        # but for long names, we want to cap it a bit
+        if acceptable_score > 10:
+            acceptable_score = 10
+        elif acceptable_score > 5:
+            acceptable_score = 4
+
+        possibles = possible_functions(known_functions, name, acceptable_score=acceptable_score)
+
+        if len(possibles) == 0:
+            self.send_channel_message(channel, "I don't know what you mean and have no suggestions")
+            return
+
+        message = f'I don\'t know about `{name}`. But I did find the following functions with similiar names:\n'
+        message += ' | '.join(possibles[:5])
+
+        self.send_channel_message(channel, message)
+
+
     def help(self, channel: str, func_name: str = None) -> None:
         """ given a func_name, I'll tell you about it
         """
@@ -208,7 +236,12 @@ class GenericSlackBot(BetterSlack):
             self.list(channel)
             return
 
-        func = self.known_functions()[func_name]
+        known_functions = self.known_functions()
+
+        if func_name not in known_functions:
+            return self.possible_funcs(channel, func_name)
+
+        func = known_functions[func_name]
         docs = ' '.join(line.strip() for line in func.__doc__.split('\n'))
 
         message = f'`{func_name}` has the help message:\n{docs}\nAnd the type info:\n'  # noqa: E501
@@ -244,3 +277,15 @@ class GenericSlackBot(BetterSlack):
         message += '\n```'
 
         self.send_channel_message(channel, message)
+
+
+def possible_functions(known_functions, name, acceptable_score=5):
+    possibles = [
+        (text_tools.token_based_levenshtein(func_name, name), func_name) for func_name in known_functions
+    ]
+
+    possibles = [ x for x in possibles if x[0] < acceptable_score]
+    possibles = sorted(possibles, key=lambda x:x[0])
+    possibles = [ x[1] for x in possibles ]
+
+    return possibles

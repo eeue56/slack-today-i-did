@@ -8,6 +8,7 @@ MOCK_TOKENS = {
 
 TEXT_WITHOUT_TOKENS = 'dave fish'
 TEXT_WITH_TOKEN = "hello dave"
+TEXT_WITH_TOKEN_MISPELLED = "hfllo"
 TEXT_WITH_TOKENS = "hello dave NOW"
 
 
@@ -93,6 +94,16 @@ def test_eval_help_with_arg():
 
     assert stuff['action'] == funcs_with_help['help']
     assert stuff['args'] == [('hello', str), ('NOW', str)]
+    assert stuff['errors'] == []
+
+
+def test_eval_help_with_badly_spelled_function():
+    funcs_with_help = dict(MOCK_TOKENS, help=lambda x:x)
+    tokens = parser.tokenize('help ' + TEXT_WITH_TOKEN_MISPELLED, funcs_with_help)
+    stuff = parser.eval(tokens, funcs_with_help)
+
+    assert stuff['action'] == funcs_with_help['help']
+    assert stuff['args'] == [('hfllo', str)]
     assert stuff['errors'] == []
 
 
