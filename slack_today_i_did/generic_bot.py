@@ -183,6 +183,11 @@ class GenericSlackBot(BetterSlack):
         """ run the last command again """
 
         stuff = self.command_history.last_command(channel)
+
+        if stuff is None:
+            self.send_channel_message(channel, 'No commands have been run yet!')
+            return
+
         action = stuff['action']
         args = stuff['args']
 
@@ -227,7 +232,6 @@ class GenericSlackBot(BetterSlack):
         message += ' | '.join(possibles[:5])
 
         self.send_channel_message(channel, message)
-
 
     def help(self, channel: str, func_name: str = None) -> None:
         """ given a func_name, I'll tell you about it
@@ -284,8 +288,13 @@ def possible_functions(known_functions, name, acceptable_score=5):
         (text_tools.token_based_levenshtein(func_name, name), func_name) for func_name in known_functions
     ]
 
-    possibles = [ x for x in possibles if x[0] < acceptable_score]
-    possibles = sorted(possibles, key=lambda x:x[0])
-    possibles = [ x[1] for x in possibles ]
+    possibles = [x for x in possibles if x[0] < acceptable_score]
+    possibles = sorted(possibles, key=lambda x: x[0])
+    possibles = [x[1] for x in possibles]
 
     return possibles
+
+
+class BotExtension(GenericSlackBot):
+    def __init__(self, *args, **kwargs):
+        pass

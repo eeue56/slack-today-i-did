@@ -9,6 +9,7 @@ def git_checkout(branch):
     os.system('git pull')
     os.system(f'git checkout {branch}')
 
+
 def git_current_version():
     byte_text = subprocess.check_output(["git", "status"], stderr=subprocess.STDOUT)
     text = byte_text.decode()

@@ -9,4 +9,4 @@ flake8 main.py slack_today_i_did
 # run doctest
 python3 -m doctest slack_today_i_did/*.py
 
-python3 -m pytest 
+python3 -m pytest
