@@ -59,6 +59,13 @@ class TodayIDidBot(GenericSlackBot):
         self.sessions = Sessions()
         self.sessions.load_from_file(self.session_file)
 
+    @property
+    def features_enabled(self):
+        return {
+            "repo": self.repo is not None,
+            "rollbar": self.rollbar is not None
+        }
+
     def _actually_parse_message(self, message):
         GenericSlackBot._actually_parse_message(self, message)
 
@@ -73,7 +80,7 @@ class TodayIDidBot(GenericSlackBot):
             people_who_want_notification.extend(self.notify.who_wants_it(string))
 
         people_who_want_notification = set(people_who_want_notification)
-            
+
         for person in people_who_want_notification:
             self.ping_person(message['channel'], person)
 
@@ -157,6 +164,7 @@ class TodayIDidBot(GenericSlackBot):
 
             'reload-funcs': self.reload_functions,
             'reload': self.reload_branch,
+            'status': self.status,
 
             'house-party': self.party,
 
@@ -227,11 +235,38 @@ class TodayIDidBot(GenericSlackBot):
 
         self.send_channel_message(channel, f"<@{person}> ^")
 
-    def reload_branch(self, channel: str, branch: str) -> None:
+    def reload_branch(self, channel: str, branch: str = None) -> None:
         """ reload a branch and trigger a restart """
-        self_aware.git_checkout(branch)
 
+        if branch is None:
+            branch = self_aware.git_current_version()
+            if branch.startswith('HEAD DETACHED'):
+                return
+
+            branch = branch.lstrip('On branch')
+
+        self_aware.git_checkout(branch)
         self_aware.restart_program()
+
+    def status(self, channel: str, show_all: str = None) -> None:
+        """ provides meta information about the bot """
+
+        current_version = self_aware.git_current_version()
+
+        message = f"I am running on {current_version}\n"
+
+        if show_all is not None:
+            message += '-------------\n'
+            message += '\n'.join(
+                f'{feature} is {"enabled" if is_enabled else "disabled"}'
+                for (feature, is_enabled) in self.features_enabled.items()
+            )
+            message += '\n-------------\n'
+
+            message += f'Python version: {self_aware.python_version()}\n'
+            message += f'Ruby version: {self_aware.ruby_version()}\n'
+
+        self.send_channel_message(channel, message)
 
     def party(self, channel: str) -> None:
         """ TADA """
