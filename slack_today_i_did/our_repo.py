@@ -44,7 +44,7 @@ class OurRepo(object):
 
         os.chdir(self.folder)
 
-        try
+        try:
             self._git_init()
         except:
             raise
