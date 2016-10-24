@@ -21,7 +21,11 @@ class OurRepo(object):
         os.makedirs(self.folder, exist_ok=True)
 
     def _git_init(self) -> None:
-        url = f'https://{self.token}@github.com/{self.org}/{self.repo}.git'
+        if len(self.token) == 0:
+            url = 'https://github.com/{self.org}/{self.repo}.git'
+        else:
+            url = f'https://{self.token}@github.com/{self.org}/{self.repo}.git'
+
         os.system(f'git clone --depth 1 {url}')
         os.chdir(self.repo)
         os.system(f'git remote set-url origin {url}')

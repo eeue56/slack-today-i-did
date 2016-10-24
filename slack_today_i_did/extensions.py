@@ -2,12 +2,14 @@ import datetime
 from typing import List
 import json
 import re
+import subprocess
 
 from slack_today_i_did.reports import Report
 from slack_today_i_did.generic_bot import BotExtension
 from slack_today_i_did.reports import Sessions
 from slack_today_i_did.known_names import KnownNames
 from slack_today_i_did.notify import Notification
+from slack_today_i_did.our_repo import OurRepo
 
 
 class BasicStatements(BotExtension):
@@ -198,7 +200,6 @@ Tell me `end-session` to finish the session and post it here!
         message += '\n'.join(entry['messages'])
         self.send_channel_message(entry['channel'], message)
 
-
 class RollbarExtensions(BotExtension):
     def rollbar_item(self, channel: str, field: str, counter: int) -> None:
         """ takes a counter, gets the rollbar info for that counter """
@@ -283,3 +284,21 @@ class ElmExtensions(BotExtension):
             )
 
         self.send_channel_message(channel, message)
+
+
+class DeployComplexityExtensions(BotExtension):
+    def _setup_deploy_complexity(self) -> None:
+        self.deploy_complexity_repo = OurRepo('repos', "", "NoRedInk", "deploy-complexity")
+
+    def last_prs(self, channel: str) -> None:
+        """ list the PRs in the main repo """
+
+        self.deploy_complexity_repo.get_ready()
+        self.repo.get_ready()
+
+        script_location = f'{self.deploy_complexity_repo.repo_dir}/deploy-complexity.rb'
+
+        output = subprocess.check_output([script_location])
+
+        message = output.decode()
+        self.send_channel_message(channel, message.strip())

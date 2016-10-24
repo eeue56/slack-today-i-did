@@ -16,7 +16,7 @@ from slack_today_i_did.extensions import (
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, RollbarExtensions,
-    ElmExtensions
+    ElmExtensions, DeployComplexityExtensions
 )
 
 from slack_today_i_did.generic_bot import GenericSlackBot
@@ -27,7 +27,7 @@ class Extensions(
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, RollbarExtensions,
-    ElmExtensions
+    ElmExtensions, DeployComplexityExtensions
 ):
     pass
 
@@ -45,6 +45,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
         self._setup_notify()
         self._setup_sessions()
         self._setup_command_history()
+        self._setup_deploy_complexity()
 
     def _setup_from_kwargs_and_remove_fields(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         rollbar_token = kwargs.pop('rollbar_token', None)
@@ -163,7 +164,9 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'forget': self.stop_listening,
 
             'start-session': self.start_session,
-            'end-session': self.end_session
+            'end-session': self.end_session,
+
+            'deployed': self.last_prs
         }
 
     def reload_branch(self, channel: str, branch: str = None) -> None:
