@@ -10,7 +10,7 @@ To add a new function:
 
 import html
 
-from typing import List
+from typing import List, Union, NamedTuple
 
 from slack_today_i_did.better_slack import BetterSlack
 from slack_today_i_did.command_history import CommandHistory
@@ -19,6 +19,10 @@ import slack_today_i_did.self_aware as self_aware
 
 import slack_today_i_did.parser as parser
 import slack_today_i_did.text_tools as text_tools
+
+
+ChannelMessage = NamedTuple('ChannelMessage', [('channel', str), ('text', str)])
+ChannelMessages = Union[ChannelMessage, List[ChannelMessage]]
 
 
 class GenericSlackBot(BetterSlack):
@@ -116,6 +120,15 @@ class GenericSlackBot(BetterSlack):
                 self.send_channel_message(channel, '\n\n'.join(evaluation.errors))
                 return
 
+            if func_call.return_type == ChannelMessages:
+                if isinstance(evaluation.result, ChannelMessage):
+                    messages = [evaluation.result]
+                else:
+                    messages = evaluation.result
+
+                for message in messages:
+                    self.send_channel_message(message.channel, message.text)
+
             if evaluation.action != self.known_statements()['!!']:
                 self.command_history.add_command(channel, evaluation.action, evaluation.args)
         except Exception as e:
@@ -143,14 +156,14 @@ class GenericSlackBot(BetterSlack):
             print(message)
             self.parse_message(message)
 
-    def error_help(self, channel: str, problem: str) -> None:
+    def error_help(self, channel: str, problem: str) -> ChannelMessages:
         """ present an error help message """
         if problem == 'NO_TOKENS':
-            self.send_channel_message(channel, 'I\'m sorry, I couldn\'t find any tokens. Try using `help` or `list`')  # noqa: E501
+            return ChannelMessage(channel, 'I\'m sorry, I couldn\'t find any tokens. Try using `help` or `list`')  # noqa: E501
         else:
-            self.send_channel_message(channel, f'Some problem: {problem}')
+            return ChannelMessage(channel, f'Some problem: {problem}')
 
-    def last_command_statement(self, channel: str) -> None:
+    def last_command_statement(self, channel: str) -> ChannelMessages:
         """ run the last command again """
 
         stuff = self.command_history.last_command(channel)
@@ -162,9 +175,9 @@ class GenericSlackBot(BetterSlack):
         action = stuff['action']
         args = stuff['args']
 
-        action(*args)
+        return action(*args)
 
-    def list(self, channel: str) -> None:
+    def list(self, channel: str) -> ChannelMessages:
         """ list known statements and functions """
 
         message = 'Main functions:\n'
@@ -177,9 +190,9 @@ class GenericSlackBot(BetterSlack):
             f'`{func}`'for func in self.known_statements()
         )
 
-        self.send_channel_message(channel, message)
+        return ChannelMessage(channel, message)
 
-    def possible_funcs(self, channel: str, name: str) -> None:
+    def possible_funcs(self, channel: str, name: str) -> ChannelMessages:
         """ give me a name and I'll tell you funcs which are close """
 
         known_functions = self.known_functions()
@@ -196,21 +209,19 @@ class GenericSlackBot(BetterSlack):
         possibles = possible_functions(known_functions, name, acceptable_score=acceptable_score)
 
         if len(possibles) == 0:
-            self.send_channel_message(channel, "I don't know what you mean and have no suggestions")
-            return
+            return ChannelMessage(channel, "I don't know what you mean and have no suggestions")
 
         message = f'I don\'t know about `{name}`. But I did find the following functions with similiar names:\n'
         message += ' | '.join(possibles[:5])
 
-        self.send_channel_message(channel, message)
+        return ChannelMessage(channel, message)
 
     @parser.metafunc
-    def help(self, channel: str, args: List[parser.FuncArg]) -> None:
+    def help(self, channel: str, args: List[parser.FuncArg]) -> ChannelMessages:
         """ given a function name, I'll tell you about it
         """
         if not len(args):
-            self.list(channel)
-            return
+            return self.list(channel)
 
         if isinstance(args[0], parser.Constant):
             func_name = args[0].value
@@ -236,13 +247,14 @@ class GenericSlackBot(BetterSlack):
 
             message += f'{type_info}\n```'
 
-        self.send_channel_message(channel, message)
+        return ChannelMessage(channel, message)
 
-    def reload_functions(self, channel: str) -> None:
+    def reload_functions(self, channel: str) -> ChannelMessages:
         """ reload the functions a bot knows """
         self_aware.restart_program()
+        return []
 
-    def functions_that_return(self, channel: str, text: str) -> None:
+    def functions_that_return(self, channel: str, text: str) -> ChannelMessages:
         """ give a type, return functions that return things of that type
         """
         func_names = []
@@ -258,7 +270,7 @@ class GenericSlackBot(BetterSlack):
         message += '\n'.join(name for (name, type) in func_names)
         message += '\n```'
 
-        self.send_channel_message(channel, message)
+        return ChannelMessage(channel, message)
 
 
 def possible_functions(known_functions, name, acceptable_score=5):
