@@ -39,10 +39,15 @@ class OurRepo(object):
         current_dir = os.getcwd()
         try:
             self.make_repo_dir()
-            os.chdir(self.folder)
-            self._git_init()
         except:
             pass
+
+        os.chdir(self.folder)
+
+        try
+            self._git_init()
+        except:
+            raise
         finally:
             os.chdir(current_dir)
 
