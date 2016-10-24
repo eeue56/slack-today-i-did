@@ -130,8 +130,12 @@ def evaluate_func_call(known_functions, func_call, default_args=[]) -> FuncResul
 
     argument_errors = []
 
-    annotations = copy.deepcopy(action.__annotations__)
+    # TODO: simply copy.deepcopy and pop('return', None) after
+    # https://github.com/python/typing/issues/306 is resolved.
+    # `-> ChannelMessages` blows up if you try to copy.deepcopy the annotations.
+    annotations = dict(action.__annotations__)
     annotations.pop('return', None)
+    annotations = copy.deepcopy(annotations)
 
     # check arity mismatch
     num_keyword_args = len(action.__defaults__) if action.__defaults__ else 0

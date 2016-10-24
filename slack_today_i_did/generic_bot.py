@@ -216,8 +216,10 @@ class GenericSlackBot(BetterSlack):
 
         return ChannelMessage(channel, message)
 
+    # TODO: args should be annotated with `List[parser.FuncArg]` once
+    # https://github.com/python/typing/issues/306 is resolved.
     @parser.metafunc
-    def help(self, channel: str, args: List[parser.FuncArg]) -> ChannelMessages:
+    def help(self, channel: str, args) -> ChannelMessages:
         """ given a function name, I'll tell you about it
         """
         if not len(args):
