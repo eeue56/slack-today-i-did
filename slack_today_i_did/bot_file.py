@@ -199,6 +199,8 @@ class TodayIDidBot(Extensions, GenericSlackBot):
 
             message += f'Python version: {self_aware.python_version()}\n'
             message += f'Ruby version: {self_aware.ruby_version()}\n'
+            message += f'Main repo: {self.repo.repo_dir}\n'
+            message += f'Main repo: {self.deploy_complexity_repo.repo_dir}\n'
 
         self.send_channel_message(channel, message)
 
