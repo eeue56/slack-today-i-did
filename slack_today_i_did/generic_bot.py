@@ -8,7 +8,6 @@ To add a new function:
 
 """
 
-import copy
 import html
 
 from typing import List
@@ -92,10 +91,8 @@ class GenericSlackBot(BetterSlack):
         else:
             return None
 
-        # we always give the channel as the first arg
-        args = [parser.Constant(channel, str)]
         tokens = parser.tokenize(text, self.known_tokens())
-        return parser.parse(tokens, self.known_functions(), default_args=args)
+        return parser.parse(tokens, self.known_functions())
 
     def _actually_parse_message(self, message):
         channel = message['channel']
@@ -106,48 +103,21 @@ class GenericSlackBot(BetterSlack):
         if stuff is None:
             return
 
-        action = stuff['action']
-        args = stuff['args']
+        func_call = stuff['func_call']
         evaluate = stuff['evaluate']
 
-        annotations = copy.deepcopy(action.__annotations__)
-        annotations.pop('return')
-        error_messages = []
-
-        # check arity mismatch
-        num_keyword_args = len(action.__defaults__) if action.__defaults__ else 0
-        num_positional_args = len(annotations) - num_keyword_args
-        if num_positional_args > len(args):
-            error_messages.append(
-                parser.mismatching_args_messages(action, annotations, args)
-            )
-
-        mismatching_types = parser.mismatching_types_messages(
-            action,
-            annotations,
-            args
-        )
-
-        if len(mismatching_types) > 0:
-            error_messages.append(mismatching_types)
-
-        if len(error_messages) > 0:
-            self.send_channel_message(channel, '\n\n'.join(error_messages))
-            return
-
-        eval_result = evaluate(args)
-
-        # deal with exceptions running the command
-        if len(eval_result['errors']) > 0:
-            messages = parser.exception_error_messages(eval_result['errors'])
-            self.send_channel_message(channel, '\n\n'.join(messages))
-            return
-
-        if action != self.known_statements()['!!']:
-            self.command_history.add_command(channel, action, eval_result['args'])
-
+        # we always give the channel as the first arg
+        default_args = [parser.Constant(channel, str)]
         try:
-            action(*eval_result['args'])
+            evaluation = evaluate(func_call, default_args)
+
+            # deal with exceptions running the command
+            if len(evaluation.errors) > 0:
+                self.send_channel_message(channel, '\n\n'.join(evaluation.errors))
+                return
+
+            if evaluation.action != self.known_statements()['!!']:
+                self.command_history.add_command(channel, evaluation.action, evaluation.args)
         except Exception as e:
             self.send_channel_message(channel, f'We got an error {e}!')
 
@@ -235,7 +205,7 @@ class GenericSlackBot(BetterSlack):
         self.send_channel_message(channel, message)
 
     @parser.metafunc
-    def help(self, channel: str, args: List[parser.TopLevelArg]) -> None:
+    def help(self, channel: str, args: List[parser.FuncArg]) -> None:
         """ given a function name, I'll tell you about it
         """
         if not len(args):

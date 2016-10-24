@@ -1,10 +1,14 @@
-from typing import Any, TypeVar, List, NamedTuple, Union
+from typing import Any, TypeVar, Callable, List, NamedTuple, Union
+import copy
 import functools
 
 
+FuncArg = Union['Constant', 'FuncCall']
 Constant = NamedTuple('Constant', [('value', Any), ('return_type', type)])
-FuncCall = NamedTuple('FuncCall', [('func_name', str), ('args', List[str]), ('return_type', type)])
-TopLevelArg = Union[Constant, FuncCall]
+FuncCall = NamedTuple('FuncCall', [('func_name', str), ('args', List[FuncArg]), ('return_type', type)])
+FuncResult = NamedTuple(
+    'FuncResult',
+    [('result', Any), ('action', Callable), ('args', List[Any]), ('errors', List[str])])
 
 
 def metafunc(fn):
@@ -76,64 +80,103 @@ def tokenize(text, known_tokens):
     return tokens
 
 
-def parse(tokens, known_functions, default_args=None):
-    if default_args is None:
-        default_args = []
-
-    more_args = []
+def parse(tokens, known_functions):
+    args = []
 
     # when we can't find anything
     if len(tokens) == 0:
         first_function_name = 'error-help'
-        more_args.append(Constant('NO_TOKENS', str))
+        args.append(Constant('NO_TOKENS', str))
     # when we have stuff to work with!
     else:
         first_function_name = tokens[0][1]
         first_arg = tokens[0][2].strip()
 
         if len(first_arg) > 0:
-            more_args.append(Constant(first_arg, str))
+            args.append(Constant(first_arg, str))
 
         if len(tokens) > 1:
             for (start_index, function_name, arg_to_function) in tokens[1:]:
                 func = known_functions[function_name]
-                actual_arg = [arg_to_function] if len(arg_to_function) > 0 else []
+                actual_arg = [Constant(arg_to_function, str)] if len(arg_to_function) > 0 else []
                 return_type = func.__annotations__.get('return', None)
-                more_args.append(FuncCall(function_name, actual_arg, return_type))
+                args.append(FuncCall(function_name, actual_arg, return_type))
 
     action = known_functions[first_function_name]
-    evaluator = functools.partial(evaluate, known_functions)
-
-    if is_metafunc(action):
-        args = []
-        args.extend(default_args)
-        args.append(Constant(more_args, List[TopLevelArg]))
-    else:
-        args = default_args + more_args
+    return_type = action.__annotations__.get('return', None)
+    evaluator = functools.partial(evaluate_func_call, known_functions)
 
     return {
-        'action': action,
-        'args': args,
+        'func_call': FuncCall(first_function_name, args, return_type),
         'evaluate': evaluator,
     }
 
 
-def evaluate(known_functions, args):
-    result = []
-    errors = []
+def evaluate_func_call(known_functions, func_call, default_args=[]) -> FuncResult:
+    all_errors = []
+    action = known_functions[func_call.func_name]
 
-    for arg in args:
+    if is_metafunc(action):
+        args = default_args + [Constant(func_call.args, List[FuncArg])]
+    else:
+        args = default_args + func_call.args
+
+    args_evaluation = evaluate_args(known_functions, args)
+    evaluated_args = args_evaluation['args']
+
+    if len(args_evaluation['errors']) > 0:
+        all_errors.extend(args_evaluation['errors'])
+        return FuncResult(None, None, [], all_errors)
+
+    argument_errors = []
+
+    annotations = copy.deepcopy(action.__annotations__)
+    annotations.pop('return', None)
+
+    # check arity mismatch
+    num_keyword_args = len(action.__defaults__) if action.__defaults__ else 0
+    num_positional_args = len(annotations) - num_keyword_args
+    if num_positional_args > len(evaluated_args):
+        argument_errors.append(
+            mismatching_args_messages(action, annotations, evaluated_args)
+        )
+
+    mismatching_types = mismatching_types_messages(
+        action,
+        annotations,
+        evaluated_args
+    )
+
+    if len(mismatching_types) > 0:
+        argument_errors.append(mismatching_types)
+
+    if len(argument_errors) > 0:
+        all_errors.extend(argument_errors)
+        return FuncResult(None, None, [], all_errors)
+
+    try:
+        return FuncResult(action(*evaluated_args), action, evaluated_args, all_errors)
+    except Exception as e:
+        return FuncResult(None, None, [], [exception_error_messages([(func_call.func_name, e)])])
+
+
+def evaluate_args(known_functions, args, default_args=[]):
+    result = []
+    all_errors = []
+
+    for arg in default_args + args:
         if isinstance(arg, Constant):
             result.append(arg.value)
         elif isinstance(arg, FuncCall):
-            try:
-                result.append(known_functions[arg.func_name](*arg.args))
-            except Exception as e:
-                errors.append((arg.func_name, e))
+            func_result = evaluate_func_call(known_functions, arg)
+            result.append(func_result.result)
+
+            if len(func_result.errors) > 0:
+                all_errors.extend(func_result.errors)
 
     return {
         'args': result,
-        'errors': errors,
+        'errors': all_errors,
     }
 
 

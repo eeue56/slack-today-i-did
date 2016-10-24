@@ -53,7 +53,7 @@ def test_help_on_metafunc(mocker, bot, message_context):
 
     assert MOCK_CHANNEL == mocked_channel_message.call_args[0][0]
     assert "I'll tell you about it" in mocked_channel_message.call_args[0][1]
-    assert "TopLevelArg" not in mocked_channel_message.call_args[0][1]
+    assert "FuncArg" not in mocked_channel_message.call_args[0][1]
     assert mocked_channel_message.call_count == 1
 
 

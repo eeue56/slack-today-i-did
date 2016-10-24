@@ -73,10 +73,10 @@ def test_tokenize_on_tokens():
 
 def test_parse_no_tokens():
     known_funcs = {'error-help': lambda x:x}
-    stuff = parser.parse([], known_funcs, [])
+    stuff = parser.parse([], known_funcs)
 
-    assert stuff['action'] == known_funcs['error-help']
-    assert stuff['args'] == [parser.Constant('NO_TOKENS', str)]
+    assert stuff['func_call'].func_name == 'error-help'
+    assert stuff['func_call'].args == [parser.Constant('NO_TOKENS', str)]
 
 
 def test_parse_first_func_not_in_known_funcs():
@@ -91,9 +91,9 @@ def test_eval_help_with_arg():
     tokens = parser.tokenize('help ' + TEXT_WITH_TOKENS, funcs_with_help)
     stuff = parser.parse(tokens, funcs_with_help)
 
-    assert stuff['action'] == funcs_with_help['help']
-    assert stuff['args'][0] == parser.FuncCall('hello', ['dave '], None)
-    assert stuff['args'][1] == parser.FuncCall('NOW', [], None)
+    assert stuff['func_call'].func_name == 'help'
+    assert stuff['func_call'].args[0] == parser.FuncCall('hello', [parser.Constant('dave ', str)], None)
+    assert stuff['func_call'].args[1] == parser.FuncCall('NOW', [], None)
 
 
 def test_eval_help_with_badly_spelled_function():
@@ -101,20 +101,20 @@ def test_eval_help_with_badly_spelled_function():
     tokens = parser.tokenize('help ' + TEXT_WITH_TOKEN_MISPELLED, funcs_with_help)
     stuff = parser.parse(tokens, funcs_with_help)
 
-    assert stuff['action'] == funcs_with_help['help']
-    assert stuff['args'] == [parser.Constant('hfllo', str)]
+    assert stuff['func_call'].func_name == 'help'
+    assert stuff['func_call'].args == [parser.Constant('hfllo', str)]
 
-    result = stuff['evaluate'](stuff['args'])
-    assert result['args'] == ['hfllo']
-    assert result['errors'] == []
+    result = stuff['evaluate'](stuff['func_call'])
+    assert result.result == 'hfllo'
+    assert result.errors == []
 
 
 def test_eval_first_func_with_one_arg():
     known_funcs = {'hello': lambda x:x}
     stuff = parser.parse([(0, 'hello', 'world')], known_funcs)
 
-    assert stuff['action'] == known_funcs['hello']
-    assert stuff['args'] == [parser.Constant('world', str)]
+    assert stuff['func_call'].func_name == 'hello'
+    assert stuff['func_call'].args == [parser.Constant('world', str)]
 
 
 def test_eval_second_func_with_one_arg():
@@ -123,8 +123,8 @@ def test_eval_second_func_with_one_arg():
 
     stuff = parser.parse([(0, 'cocoa', ''), (0, 'double', 'cream')], known_funcs)
 
-    assert stuff['action'] == known_funcs['cocoa']
-    assert stuff['args'] == [parser.FuncCall('double', ['cream'], str)]
+    assert stuff['func_call'].func_name == 'cocoa'
+    assert stuff['func_call'].args == [parser.FuncCall('double', [parser.Constant('cream', str)], str)]
 
 
 def test_eval_second_func_with_error():
@@ -132,10 +132,9 @@ def test_eval_second_func_with_error():
 
     stuff = parser.parse([(0, 'cocoa', ''), (0, 'koan', 'x')], known_funcs)
 
-    assert stuff['action'] == known_funcs['cocoa']
-    assert stuff['args'] == [parser.FuncCall('koan', ['x'], None)]
+    assert stuff['func_call'].func_name == 'cocoa'
+    assert stuff['func_call'].args == [parser.FuncCall('koan', [parser.Constant('x', str)], None)]
 
-    result = stuff['evaluate'](stuff['args'])
-    assert result['args'] == []
-    assert result['errors'][0][0] == 'koan'
-    assert isinstance(result['errors'][0][1], ZeroDivisionError)
+    result = stuff['evaluate'](stuff['func_call'])
+    assert result.result == None
+    assert 'koan threw division by zero' in result.errors[0]
