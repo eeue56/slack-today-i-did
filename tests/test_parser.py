@@ -116,6 +116,10 @@ def test_eval_first_func_with_one_arg():
     assert stuff['func_call'].func_name == 'hello'
     assert stuff['func_call'].args == [parser.Constant('world', str)]
 
+    result = stuff['evaluate'](stuff['func_call'])
+    assert result.result == 'world'
+    assert result.errors == []
+
 
 def test_eval_second_func_with_one_arg():
     known_funcs = {'cocoa': lambda x:x + 'cocoa', 'double': lambda x:x * 2}
@@ -125,6 +129,10 @@ def test_eval_second_func_with_one_arg():
 
     assert stuff['func_call'].func_name == 'cocoa'
     assert stuff['func_call'].args == [parser.FuncCall('double', [parser.Constant('cream', str)], str)]
+
+    result = stuff['evaluate'](stuff['func_call'])
+    assert result.result == 'creamcreamcocoa'
+    assert result.errors == []
 
 
 def test_eval_second_func_with_error():
