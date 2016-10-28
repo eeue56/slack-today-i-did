@@ -129,7 +129,6 @@ class ElmRepo(OurRepo):
     def get_017_porting_breakdown(self, pattern: str) -> Dict[str, Dict[str, int]]:  # noqa: E501
         all_files = self.get_matching_filenames(pattern)
 
-
         breakdown = {
             filename: self.how_hard_to_port(filename) for filename in all_files
             if self.what_kinda_file(filename) == ElmVersion.v_016
