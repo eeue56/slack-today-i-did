@@ -273,9 +273,8 @@ class ElmExtensions(BotExtension):
         self.repo.get_ready()
         message = "We have found the following filenames:\n"
 
-        self.repo.create_lock()
-        files = self.repo.get_017_porting_breakdown(filename_pattern)
-        self.repo.remove_lock()
+        with self.repo.lock():
+            files = self.repo.get_017_porting_breakdown(filename_pattern)
 
         message += f'Here\'s the breakdown for the:'
 

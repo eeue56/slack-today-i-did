@@ -8,6 +8,7 @@ import os
 import glob
 from typing import List, Dict
 from enum import Enum
+from contextlib import contextmanager
 
 
 class OurRepo(object):
@@ -108,6 +109,12 @@ class ElmRepo(OurRepo):
             recursive=True
         )
         return all_files
+
+    @contextmanager
+    def lock(self) -> None:
+        self.create_lock()
+        yield
+        self.remove_lock()
 
     def create_lock(self) -> None:
         """ create a lock so that caches can be used to make some calcs faster """
