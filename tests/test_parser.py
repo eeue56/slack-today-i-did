@@ -146,3 +146,18 @@ def test_eval_second_func_with_error():
     result = stuff.evaluate(stuff.func_call)
     assert result.result == None
     assert 'koan threw division by zero' in result.errors[0]
+
+
+def test_eval_type_mismtach():
+    def koan(x: int) -> None:
+        return 1 / 0
+    known_funcs = {'koan': koan}
+
+    stuff = parser.parse([(0, 'koan', 'x')], known_funcs)
+
+    assert stuff.func_call.func_name == 'koan'
+    assert stuff.func_call.args == [parser.Constant('x', str)]
+
+    result = stuff.evaluate(stuff.func_call)
+    assert 'You tried to give me' in result.errors[0]
+    assert 'but I wanted a `<class \'int\'>`' in result.errors[0]
