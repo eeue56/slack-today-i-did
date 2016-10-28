@@ -1,7 +1,8 @@
 language: python
 cache: pip
 python:
-  - "nightly" # currently points to 3.6-dev
+  # see https://docs.travis-ci.com/user/languages/python/ for options
+  - "nightly"
 # command to install dependencies
 install:
   - "pip install -r requirements.txt"

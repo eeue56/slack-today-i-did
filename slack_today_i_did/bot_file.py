@@ -19,7 +19,7 @@ from slack_today_i_did.extensions import (
     ElmExtensions
 )
 
-from slack_today_i_did.generic_bot import GenericSlackBot
+from slack_today_i_did.generic_bot import GenericSlackBot, ChannelMessage, ChannelMessages
 import slack_today_i_did.self_aware as self_aware
 
 
@@ -166,20 +166,22 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'end-session': self.end_session
         }
 
-    def reload_branch(self, channel: str, branch: str = None) -> None:
+    def reload_branch(self, channel: str, branch: str = None) -> ChannelMessages:
         """ reload a branch and trigger a restart """
 
         if branch is None:
             branch = self_aware.git_current_version()
             if branch.startswith('HEAD DETACHED'):
-                return
+                return []
 
             branch = branch.lstrip('On branch')
 
         self_aware.git_checkout(branch)
         self_aware.restart_program()
 
-    def status(self, channel: str, show_all: str = None) -> None:
+        return []
+
+    def status(self, channel: str, show_all: str = None) -> ChannelMessages:
         """ provides meta information about the bot """
 
         current_version = self_aware.git_current_version()
@@ -197,8 +199,8 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             message += f'Python version: {self_aware.python_version()}\n'
             message += f'Ruby version: {self_aware.ruby_version()}\n'
 
-        self.send_channel_message(channel, message)
+        return ChannelMessage(channel, message)
 
-    def party(self, channel: str) -> None:
+    def party(self, channel: str) -> ChannelMessages:
         """ TADA """
-        self.send_channel_message(channel, ':tada:')
+        return ChannelMessage(channel, ':tada:')

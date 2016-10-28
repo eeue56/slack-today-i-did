@@ -24,18 +24,21 @@ class Report(object):
         self.is_ended = False
         self.last_day_run = None
 
-    def bother_people(self, client):
+    def bother_people(self):
         if not self.people_to_bother:
-            return
+            return []
 
         self.responses = {}
         self.time_run = datetime.datetime.utcnow()
-        client.send_channel_message(self.channel, 'Starting my report!')
+        messages = []
+        messages.append((self.channel, 'Starting my report!'))
 
         for person in self.people_to_bother[:]:
-            client.send_message(person, 'Sorry to bother you!')
+            messages.append((person, 'Sorry to bother you!'))
             self.add_response(person, '')
             self.people_to_bother.remove(person)
+
+        return messages
 
     def is_time_to_bother_people(self) -> bool:
         if self.is_ended:
