@@ -1,4 +1,4 @@
-#! /usr/bin/env bash
+#! /usr/bin/env bash -ex
 
 # make sure that there's no syntax errors
 python3 -c "import main"
