@@ -26,13 +26,37 @@ ArgsResult = NamedTuple(
 FunctionMap = Dict[str, Callable]
 
 
+class MetaFuncDescriptor(object):
+    def __init__(self, fn):
+        self.func = fn
+
+    def __get__(self, obj, objtype):
+        """ Bind to instance
+        """
+        return BoundMetaFunc(obj, self.func)
+
+
+class BoundMetaFunc(object):
+    def __init__(self, instance, fn):
+        self.instance = instance
+        self.func = fn
+        # update __doc__ and co.
+        functools.update_wrapper(self, fn)
+
+    def __getattr__(self, name):
+        # proxy __defaults__
+        return getattr(self.func, name)
+
+    def __call__(self, *args, **kwargs):
+        return self.func(self.instance, *args, **kwargs)
+
+
 def metafunc(fn):
-    fn.is_metafunc = True
-    return fn
+    return MetaFuncDescriptor(fn)
 
 
 def is_metafunc(fn):
-    return getattr(fn, 'is_metafunc', False)
+    return isinstance(fn, BoundMetaFunc)
 
 
 def fill_in_the_gaps(message: str, tokens: List[Token]) -> List[TokenAndRest]:
