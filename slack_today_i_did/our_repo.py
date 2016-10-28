@@ -63,6 +63,8 @@ class ElmRepo(OurRepo):
     def __init__(self, *args, **kwargs):
         OurRepo.__init__(self, *args, **kwargs)
         self._known_files = {ElmVersion.v_016: [], ElmVersion.v_017: []}
+        self._breakdown_cache = {}
+        self._import_cache = {}
 
     def get_elm_files(self) -> List[str]:
         return glob.glob(f'{self.repo_dir}/**/*.elm', recursive=True)
@@ -99,20 +101,72 @@ class ElmRepo(OurRepo):
             if self.what_kinda_file(filename) == ElmVersion.v_017
         ]
 
-    def get_017_porting_breakdown(self, pattern: str) -> Dict[str, Dict[str, int]]:  # noqa: E501
+    def get_matching_filenames(self, pattern: str) -> List[str]:
         pattern = pattern.replace('.', '/')
         all_files = glob.glob(
             f'{self.repo_dir}/**/{pattern}.elm',
             recursive=True
         )
+        return all_files
 
-        return {
+    def create_lock(self) -> None:
+        """ create a lock so that caches can be used to make some calcs faster """
+        self._breakdown_lock = True
+        self._breakdown_cache = {}
+        self._import_cache = {}
+
+    def remove_lock(self) -> None:
+        """ removes a lock so caches are no longer used """
+        self._breakdown_lock = False
+
+    def get_017_porting_breakdown(self, pattern: str) -> Dict[str, Dict[str, int]]:  # noqa: E501
+        all_files = self.get_matching_filenames(pattern)
+
+
+        breakdown = {
             filename: self.how_hard_to_port(filename) for filename in all_files
             if self.what_kinda_file(filename) == ElmVersion.v_016
         }
 
+        if len(all_files) == 1:
+            imports = self.file_import_list(all_files[0])
+            for import_ in imports:
+                file_names = self.get_matching_filenames(import_)
+
+                if not any(name in breakdown for name in file_names)
+                    import_breakdown = self.get_017_porting_breakdown(import_)
+                    breakdown.update(import_breakdown)
+
+        return breakdown
+
+    def file_import_list(self, filename: str) -> List[str]:
+        """ returns the list of modules imported by a file """
+
+        if self._breakdown_lock:
+            if filename in self._import_cache:
+                return self._import_cache[filename]
+
+        import_lines = []
+
+        with open(filename) as f:
+            for line in f:
+                if line.startswith('import'):
+                    without_import = line.lstrip('import ')
+                    just_the_module = without_import.split(' ')[0]
+
+                    import_lines.append(just_the_module)
+
+        if self._breakdown_lock:
+            self._import_cache[filename] = import_lines
+
+        return import_lines
+
     def how_hard_to_port(self, filename: str) -> Dict[str, int]:
         """ returns a breakdown of how hard a file is to port 0.16 -> 0.17 """
+
+        if self._breakdown_lock:
+            if filename in self._breakdown_cache:
+                return self._breakdown_cache[filename]
 
         breakdown = {}
 
@@ -131,6 +185,9 @@ class ElmRepo(OurRepo):
         if ' Html' in text:
             html_count = text.count(' Html')
             breakdown['Html stuff'] = html_count
+
+        if self._breakdown_lock:
+            self._breakdown_cache[filename] = breakdown
 
         return breakdown
 
