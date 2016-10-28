@@ -140,7 +140,7 @@ class ElmRepo(OurRepo):
             for import_ in imports:
                 file_names = self.get_matching_filenames(import_)
 
-                if not any(name in breakdown for name in file_names)
+                if not any(name in breakdown for name in file_names):
                     import_breakdown = self.get_017_porting_breakdown(import_)
                     breakdown.update(import_breakdown)
 
