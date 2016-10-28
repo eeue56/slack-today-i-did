@@ -153,7 +153,6 @@ class GenericSlackBot(BetterSlack):
 
     def parse_messages(self, messages):
         for message in messages:
-            print(message)
             self.parse_message(message)
 
     def error_help(self, channel: str, problem: str) -> ChannelMessages:

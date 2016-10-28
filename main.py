@@ -1,6 +1,7 @@
 import json
 import asyncio
 from slack_today_i_did.bot_file import TodayIDidBot
+from slack_today_i_did.bot_repl import ReplBot
 from slack_today_i_did.our_repo import ElmRepo
 import os
 
@@ -17,9 +18,14 @@ def setup():
 
     return TodayIDidBot(data['token'], rollbar_token=data['rollbar-token'], elm_repo=repo)
 
+def setup_cli():
+    os.makedirs('reports', exist_ok=True)
+    os.makedirs('repos', exist_ok=True)
+
+    return ReplBot('')
 
 def main():
-    client = setup()
+    client = setup_cli()
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(client.main_loop())

@@ -4,3 +4,4 @@ slackclient==1.0.2
 typed-ast==0.5.6
 websockets==3.2
 psutil==4.3.1
+prompt-toolkit==1.0.8
