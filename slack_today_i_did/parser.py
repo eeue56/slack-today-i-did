@@ -130,7 +130,6 @@ def evaluate_func_call(
     """ Evaluate `func_call` in the context of `known_functions`
         after prepending `default_args` to `func_call`'s arguments
     """
-    all_errors = []
     action = known_functions[func_call.func_name]
 
     if is_metafunc(action):
@@ -142,8 +141,7 @@ def evaluate_func_call(
     evaluated_args = args_evaluation['args']
 
     if len(args_evaluation['errors']) > 0:
-        all_errors.extend(args_evaluation['errors'])
-        return FuncResult(None, None, [], all_errors)
+        return FuncResult(None, None, [], args_evaluation['errors'])
 
     argument_errors = []
 
@@ -172,13 +170,13 @@ def evaluate_func_call(
         argument_errors.append(mismatching_types)
 
     if len(argument_errors) > 0:
-        all_errors.extend(argument_errors)
-        return FuncResult(None, None, [], all_errors)
+        return FuncResult(None, None, [], argument_errors)
 
     try:
-        return FuncResult(action(*evaluated_args), action, evaluated_args, all_errors)
+        return FuncResult(action(*evaluated_args), action, evaluated_args, [])
     except Exception as e:
-        return FuncResult(None, None, [], [exception_error_messages([(func_call.func_name, e)])])
+        error_message = exception_error_messages([(func_call.func_name, e)])
+        return FuncResult(None, None, [], [error_message])
 
 
 def evaluate_args(
