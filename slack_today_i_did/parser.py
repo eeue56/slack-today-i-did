@@ -1,14 +1,26 @@
-from typing import Any, TypeVar, Callable, List, NamedTuple, Union
+from typing import Any, TypeVar, Callable, Dict, List, Tuple, NamedTuple, Union
 import copy
 import functools
 
+# tokenizer types
+Token = Tuple[int, str]
+TokenAndRest = Tuple[int, str, str]
 
+# parser types
 FuncArg = Union['Constant', 'FuncCall']
-Constant = NamedTuple('Constant', [('value', Any), ('return_type', type)])
-FuncCall = NamedTuple('FuncCall', [('func_name', str), ('args', List[FuncArg]), ('return_type', type)])
+Constant = NamedTuple(
+    'Constant',
+    [('value', Any), ('return_type', type)])
+FuncCall = NamedTuple(
+    'FuncCall',
+    [('func_name', str), ('args', List[FuncArg]), ('return_type', type)])
 FuncResult = NamedTuple(
     'FuncResult',
     [('result', Any), ('action', Callable), ('args', List[Any]), ('errors', List[str])])
+FuncCallBinding = NamedTuple(
+    'FuncCallBinding',
+    [('func_call', FuncCall), ('evaluate', Callable[[FuncCall, List[FuncArg]], FuncResult])])
+FunctionMap = Dict[str, Callable]
 
 
 def metafunc(fn):
@@ -20,7 +32,7 @@ def is_metafunc(fn):
     return getattr(fn, 'is_metafunc', False)
 
 
-def fill_in_the_gaps(message, tokens):
+def fill_in_the_gaps(message: str, tokens: List[Token]) -> List[TokenAndRest]:
     """
         take things that look like [(12, FOR)] turn into [(12, FOR, noah)]
     """
@@ -50,7 +62,7 @@ def fill_in_the_gaps(message, tokens):
     return builds
 
 
-def tokens_with_index(known_tokens, message):
+def tokens_with_index(known_tokens: List[str], message: str) -> List[Token]:
     """ get the tokens out of a message, in order, along with
         the index it was found at
     """
@@ -70,7 +82,7 @@ def tokens_with_index(known_tokens, message):
     return sorted(build, key=lambda x: x[0])
 
 
-def tokenize(text, known_tokens):
+def tokenize(text: str, known_tokens: List[str]) -> List[TokenAndRest]:
     """ Take text and known tokens
     """
 
@@ -80,7 +92,7 @@ def tokenize(text, known_tokens):
     return tokens
 
 
-def parse(tokens, known_functions):
+def parse(tokens: List[TokenAndRest], known_functions: FunctionMap) -> FuncCallBinding:
     args = []
 
     # when we can't find anything
@@ -106,13 +118,18 @@ def parse(tokens, known_functions):
     return_type = action.__annotations__.get('return', None)
     evaluator = functools.partial(evaluate_func_call, known_functions)
 
-    return {
-        'func_call': FuncCall(first_function_name, args, return_type),
-        'evaluate': evaluator,
-    }
+    return FuncCallBinding(
+        FuncCall(first_function_name, args, return_type),
+        evaluator)
 
 
-def evaluate_func_call(known_functions, func_call, default_args=[]) -> FuncResult:
+def evaluate_func_call(
+        known_functions: FunctionMap,
+        func_call: FuncCall,
+        default_args: List[FuncArg] = []) -> FuncResult:
+    """ Evaluate `func_call` in the context of `known_functions`
+        after prepending `default_args` to `func_call`'s arguments
+    """
     all_errors = []
     action = known_functions[func_call.func_name]
 
@@ -164,11 +181,13 @@ def evaluate_func_call(known_functions, func_call, default_args=[]) -> FuncResul
         return FuncResult(None, None, [], [exception_error_messages([(func_call.func_name, e)])])
 
 
-def evaluate_args(known_functions, args, default_args=[]):
+def evaluate_args(
+        known_functions: FunctionMap,
+        args: List[FuncArg]) -> List[Any]:
     result = []
     all_errors = []
 
-    for arg in default_args + args:
+    for arg in args:
         if isinstance(arg, Constant):
             result.append(arg.value)
         elif isinstance(arg, FuncCall):

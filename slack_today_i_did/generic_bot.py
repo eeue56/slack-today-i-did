@@ -107,8 +107,8 @@ class GenericSlackBot(BetterSlack):
         if stuff is None:
             return
 
-        func_call = stuff['func_call']
-        evaluate = stuff['evaluate']
+        func_call = stuff.func_call
+        evaluate = stuff.evaluate
 
         # we always give the channel as the first arg
         default_args = [parser.Constant(channel, str)]
