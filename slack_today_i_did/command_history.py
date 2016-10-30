@@ -1,4 +1,4 @@
-import json
+from slack_today_i_did.type_aware import json
 
 
 def makes_state_change(f):
@@ -47,11 +47,11 @@ class CommandHistory(object):
         return True
 
     @saves_state
-    def load_from_file(self, known_tokens, filename: str) -> None:
+    def load_from_file(self, known_tokens, known_types, filename: str) -> None:
         """ Load command history from a file """
         try:
             with open(filename) as f:
-                as_json = json.load(f)
+                as_json = json.load(f, known_types=known_types)
         except FileNotFoundError:
             return
 
@@ -83,7 +83,7 @@ class CommandHistory(object):
             'args': command_entry['args']
         }
 
-    def _no_longer_exists(self, *args, **kwargs) -> None:
+    def _no_longer_exists(self, *args, **kwargs) -> str:
         return 'this thing no longer exists!'
 
     def _command_entry_from_json(self, known_tokens, json):

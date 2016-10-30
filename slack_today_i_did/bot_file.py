@@ -54,6 +54,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             self.rollbar = Rollbar(rollbar_token)
 
         self.repo = kwargs.pop('elm_repo', None)
+        self.reports_dir = kwargs.pop('reports_dir', 'reports')
         self.known_names_file = kwargs.pop('known_names_file', 'names.json')
         self.notify_file = kwargs.pop('notify_file', 'notify.json')
         self.session_file = kwargs.pop('session_file', 'sessions.json')
@@ -62,7 +63,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
 
     def _setup_command_history(self) -> None:
         known_functions = {action.__name__: action for action in self.known_functions().values()}
-        self.command_history.load_from_file(known_functions, self.command_history_file)
+        self.command_history.load_from_file(known_functions, (ChannelMessages,), self.command_history_file)
 
     @property
     def features_enabled(self):

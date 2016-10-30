@@ -159,7 +159,12 @@ def evaluate_func_call(
     num_positional_args = len(annotations) - num_keyword_args
     if num_positional_args > len(args_result.result):
         argument_errors.append(
-            mismatching_args_messages(action, annotations, args_result.result)
+            mismatching_args_messages(
+                action,
+                annotations,
+                args_result.result,
+                args_result.return_types
+            )
         )
 
     mismatching_types = mismatching_types_messages(
@@ -217,7 +222,7 @@ def exception_error_messages(errors) -> str:
     return message
 
 
-def mismatching_args_messages(action, annotations, args) -> str:
+def mismatching_args_messages(action, annotations, arg_values, arg_types) -> str:
     message = f'I wanted things to look like for function `{action.__name__}`:\n'  # noqa: E501
     message += '```\n'
 
@@ -229,10 +234,11 @@ def mismatching_args_messages(action, annotations, args) -> str:
 
     message += "\nBut you gave me:\n"
     message += '```\n'
-    message += '\n'.join(f'- {arg} : {arg_type}' for (arg, arg_type) in args)
+    message += '\n'.join(f'- {arg_value} : {arg_type}'
+                         for (arg_value, arg_type) in zip(arg_values, arg_types))
     message += '\n```'
 
-    if len(annotations) < len(args):
+    if len(annotations) < len(arg_values):
         return f'Too many arguments!\n{message}'
     else:
         return f'Need some more arguments!\n{message}'

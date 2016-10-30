@@ -23,7 +23,7 @@ class BasicStatements(BotExtension):
         """ enter how much time to wait in the format HH:MM """
         return datetime.datetime.strptime(text.strip(), '%H:%M')
 
-    def now_statement(self, text: str) -> datetime.datetime:
+    def now_statement(self) -> datetime.datetime:
         """ return the current time """
         return datetime.datetime.utcnow()
 
@@ -150,7 +150,7 @@ class ReportExtensions(BotExtension):
         """
         time_to_run = (at.hour, at.minute)
         wait_for = (wait.hour, wait.minute)
-        self.add_report(Report(channel, name, time_to_run, users, wait_for))
+        self.add_report(Report(channel, name, time_to_run, users, wait_for, reports_dir=self.reports_dir))
         return []
 
     def bother_all_now(self, channel: str) -> ChannelMessages:
@@ -158,7 +158,8 @@ class ReportExtensions(BotExtension):
         """
         messages = []
         for report in self.reports.get(channel, {}).values():
-            messages.extend(report.bother_people())
+            bothers = [ChannelMessage(*bother) for bother in report.bother_people()]
+            messages.extend(bothers)
         return messages
 
     def add_report(self, report):
