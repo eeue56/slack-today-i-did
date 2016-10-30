@@ -10,7 +10,7 @@ from prompt_toolkit.shortcuts import (
     prompt_async,
     create_eventloop
 )
-from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.history import FileHistory
 from prompt_toolkit.contrib.completers import WordCompleter
 
 
@@ -18,10 +18,13 @@ from prompt_toolkit.contrib.completers import WordCompleter
 class ReplBot(TodayIDidBot):
     def __init__(self, *args, **kwargs):
         TodayIDidBot.__init__(self, *args, **kwargs)
+        self._setup_cli_history()
+
+    def _setup_cli_history(self):
+        self.cli_history = FileHistory('.cli_history')
 
     async def __aenter__(self):
         self.eventloop = create_asyncio_eventloop()
-        self.cli_history = InMemoryHistory()
         self.completer = WordCompleter(self.known_tokens())
 
         config = {
