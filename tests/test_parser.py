@@ -161,3 +161,18 @@ def test_eval_type_mismtach():
     result = stuff.evaluate(stuff.func_call)
     assert 'You tried to give me' in result.errors[0]
     assert 'but I wanted a `<class \'int\'>`' in result.errors[0]
+
+
+def test_eval_arg_mismtach():
+    def more(a: str, b: str) -> str:
+        return a + b + ' more'
+    known_funcs = {'more': more}
+
+    stuff = parser.parse([(0, 'more', 'x')], known_funcs)
+
+    assert stuff.func_call.func_name == 'more'
+    assert stuff.func_call.args == [parser.Constant('x', str)]
+
+    result = stuff.evaluate(stuff.func_call)
+    assert 'I wanted things to look like' in result.errors[0]
+    assert 'Need some more' in result.errors[0]
