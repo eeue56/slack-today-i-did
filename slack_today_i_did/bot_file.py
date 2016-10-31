@@ -173,7 +173,8 @@ class TodayIDidBot(Extensions, GenericSlackBot):
 
             'known-ext': self.known_extensions,
             'disable-ext': self.disable_extension,
-            'enable-ext': self.enable_extension
+            'enable-ext': self.enable_extension,
+            'load-ext': self.load_extension
         }
 
     def reload_branch(self, channel: str, branch: str = None) -> ChannelMessages:
