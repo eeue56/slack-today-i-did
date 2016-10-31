@@ -176,8 +176,7 @@ class ExtensionExtensions(BotExtension):
                 message += ' | '.join(name for (_, name) in sorted(suggestions)[:5])
                 return ChannelMessage(channel, message)
             else:
-                extension_names = [ extension_name ]
-
+                extension_names = [extension_name]
 
         for extension in extension_names:
             # skip if the extension is not a superclass
@@ -210,8 +209,6 @@ class ExtensionExtensions(BotExtension):
     @parser.metafunc
     def disable_token(self, channel: str, tokens) -> ChannelMessages:
         """ disable tokens """
-        known_functions = self.known_functions()
-
         for token in tokens:
             func_name = token.func_name
             self._disabled_tokens[func_name] = self._last_sender

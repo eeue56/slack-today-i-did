@@ -1,18 +1,14 @@
 from slack_today_i_did.bot_file import TodayIDidBot
 
 import prompt_toolkit.layout.lexers
-from prompt_toolkit.layout.lexers import Token
 import prompt_toolkit.auto_suggest
 from prompt_toolkit.interface import CommandLineInterface
 from prompt_toolkit.shortcuts import (
     create_prompt_application,
-    create_asyncio_eventloop,
-    prompt_async,
-    create_eventloop
+    create_asyncio_eventloop
 )
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.contrib.completers import WordCompleter
-
 
 
 class ReplBot(TodayIDidBot):
@@ -49,13 +45,12 @@ class ReplBot(TodayIDidBot):
         incoming = await self.cli.run_async()
         incoming = f'<@{self.name}> {incoming.text}'
 
-        data = [
-            { "text": incoming
-            , "type": "message"
-            , "channel": "CLI"
-            , "user": "CLI"
-            }
-        ]
+        data = [{
+            "text": incoming,
+            "type": "message",
+            "channel": "CLI",
+            "user": "CLI"
+        }]
 
         return data
 
@@ -104,7 +99,6 @@ class ReplBot(TodayIDidBot):
             strings.append(field['value'])
 
         return strings
-
 
 
 class Suggestions(prompt_toolkit.auto_suggest.AutoSuggestFromHistory):
