@@ -54,6 +54,9 @@ class CommandHistory(object):
                 as_json = json.load(f, known_types=known_types)
         except FileNotFoundError:
             return
+        except:
+            # sometimes bad things happen to good people
+            return
 
         for (channel, commands) in as_json['channels'].items():
             for command_entry in commands:
@@ -63,15 +66,20 @@ class CommandHistory(object):
     @saves_state
     def save_to_file(self, filename: str) -> None:
         """ save command history to a file """
-        with open(filename, 'w') as f:
-            channels = {
-                'channels': {
-                    channel: [self._command_entry_to_json(command) for command in commands]
-                    for (channel, commands) in self.history.items()
-                }
+        channels = {
+            'channels': {
+                channel: [self._command_entry_to_json(command) for command in commands]
+                for (channel, commands) in self.history.items()
             }
+        }
 
-            json.dump(channels, f)
+        # if we can't save it, exit early
+        try:
+            channel_json = json.dumps(channels)
+            with open(filename, 'w') as f:
+                f.write(channel_json)
+        except:
+            return None
 
         self.needs_save = False
 
