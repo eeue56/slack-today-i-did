@@ -154,6 +154,7 @@ class ElmRepo(OurRepo):
 
         import_lines = []
 
+
         with open(filename) as f:
             for line in f:
                 if line.startswith('import'):
@@ -161,6 +162,9 @@ class ElmRepo(OurRepo):
                     just_the_module = without_import.split(' ')[0]
 
                     import_lines.append(just_the_module)
+                elif not (line.startswith('module') or line.startswith(' ')):
+                    # we're past the imports
+                    break
 
         if self._breakdown_lock:
             self._import_cache[filename] = import_lines
