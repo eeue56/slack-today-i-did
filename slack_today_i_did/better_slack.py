@@ -67,7 +67,10 @@ class BetterSlack(SlackClient):
 
                 if parser is not None:
                     incoming = await self.get_message()
-                    parser(incoming)
+                    try:
+                        parser(incoming)
+                    except Exception as e:
+                        print(f'Error: {e}')
                 if on_tick() is not None:
                     on_tick()
                 self._in_count += 1
