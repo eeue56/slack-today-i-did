@@ -22,7 +22,13 @@ def setup_cli():
     os.makedirs('reports', exist_ok=True)
     os.makedirs('repos', exist_ok=True)
 
-    return ReplBot('')
+    with open('priv.json') as f:
+        data = json.load(f)
+
+    github_data = data['github']
+    repo = ElmRepo(github_data['folder'], github_data['token'], github_data['org'], github_data['repo'])
+
+    return ReplBot(data['token'], rollbar_token=data['rollbar-token'], elm_repo=repo)
 
 def main():
     client = setup_cli()
