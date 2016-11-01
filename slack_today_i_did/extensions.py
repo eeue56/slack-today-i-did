@@ -2,7 +2,7 @@ import datetime
 from typing import List
 import json
 import re
-import collections
+from collections import defaultdict
 
 from slack_today_i_did.reports import Report
 from slack_today_i_did.generic_bot import BotExtension, ChannelMessage, ChannelMessages
