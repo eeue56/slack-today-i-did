@@ -2,6 +2,7 @@ import datetime
 from typing import List
 import json
 import re
+import collections
 
 from slack_today_i_did.reports import Report
 from slack_today_i_did.generic_bot import BotExtension, ChannelMessage, ChannelMessages
@@ -278,6 +279,8 @@ class ElmExtensions(BotExtension):
 
         message += f'Here\'s the breakdown for the:'
 
+        total_breakdowns = defaultdict(int)
+
         for (filename, breakdown) in files.items():
             total_hardness = sum(breakdown.values())
             message += f'\nfile {filename}: total hardness {total_hardness}\n'
@@ -285,4 +288,14 @@ class ElmExtensions(BotExtension):
                 f'{name} : {value}' for (name, value) in breakdown.items()
             )
 
+            for (name, value) in breakdown.items():
+                total_breakdowns[name] += value
+
+        message += '---------------\n'
+        message += 'For a total of:\n'
+        message += ' | '.join(
+            f'{name} : {value}' for (name, value) in total_breakdowns.items()
+        )
+
         return ChannelMessage(channel, message)
+
