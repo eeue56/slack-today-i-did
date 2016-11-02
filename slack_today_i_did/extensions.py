@@ -2,7 +2,6 @@ import datetime
 from typing import List
 import json
 import re
-from functools import partial
 import importlib
 import types
 
@@ -83,12 +82,12 @@ class ExtensionExtensions(BotExtension):
             return known_functions
 
         wrapped_functions = {
-            k:v for (k, v) in known_functions.items()
-                if k not in self._disabled_tokens
+            k: v for (k, v) in known_functions.items()
+            if k not in self._disabled_tokens
         }
 
         wrapped_functions.update({
-            token:lambda *args, **kwargs: self._disabled_message(who, *args, **kwargs)
+            token: lambda *args, **kwargs: self._disabled_message(who, *args, **kwargs)
             for (token, who) in self._disabled_tokens.items()
         })
 
@@ -117,7 +116,7 @@ class ExtensionExtensions(BotExtension):
         """ Disable or enable an extension, setting who disabled it """
         known_bases = list(set(self._flatten_bases(self.__class__)))
         flipped_tokens = {
-            func.__name__:func_alias for (func_alias, func) in self.known_functions().items()
+            func.__name__: func_alias for (func_alias, func) in self.known_functions().items()
         }
 
         extensions = [base for base in known_bases if base.__name__ == extension_name]

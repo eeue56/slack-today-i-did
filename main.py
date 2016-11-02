@@ -30,6 +30,7 @@ def setup():
 
     return (data, repo)
 
+
 def setup_slack(data, repo):
     return TodayIDidBot(
         data.get('token', ''),
@@ -37,12 +38,14 @@ def setup_slack(data, repo):
         elm_repo=repo
     )
 
+
 def setup_cli(data, repo):
     return ReplBot(
         data.get('token', ''),
         rollbar_token=data.get('rollbar-token', None),
         elm_repo=repo
     )
+
 
 def main():
     parser = argparse.ArgumentParser(description='Start the slack-today-i-did-bot')
