@@ -185,7 +185,10 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             if branch.startswith('HEAD DETACHED'):
                 return []
 
-            branch = branch.lstrip('On branch')
+            on_branch_message = 'On branch'
+
+            if branch.startswith(on_branch_message):
+                branch = branch[len(on_branch_message):]
 
         self_aware.git_checkout(branch)
         self_aware.restart_program()
