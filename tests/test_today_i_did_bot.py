@@ -61,7 +61,7 @@ def test_save_and_load_known_user_func_history(mocker, bot, message_context):
         args = (sample_args[param.annotation]
                 for (name, param) in signature.parameters.items()
                 if name not in default_args)
-        message_text = f'{command} {" ".join(args)}'
+        message_text = f'{command} {" ".join(args)}'.strip()
 
         with message_context(bot, sender=MOCK_PERSON):
             spy = mocker.spy(bot, func.__name__)

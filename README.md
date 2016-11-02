@@ -21,6 +21,9 @@
 
 ```
 
-- You can then run it via `python main.py`
+## Running
+
+- `python main.py` starts up the slack bot by default
+- `python main.py --repl` starts up the local repl
 
 
