@@ -15,7 +15,7 @@ def encode_type(obj):
 
 class TypeHook(object):
     def __init__(self, types):
-        self.type_lookup_map = {repr(type_obj): type_obj for type_obj in types }
+        self.type_lookup_map = {repr(type_obj): type_obj for type_obj in types}
 
     def __call__(self, dct):
         if isinstance(dct, dict) and '__type_repr__' in dct:

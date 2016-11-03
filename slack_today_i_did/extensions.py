@@ -479,4 +479,3 @@ class ElmExtensions(BotExtension):
         )
 
         return ChannelMessage(channel, message)
-
