@@ -52,6 +52,19 @@ def generate_argparsers(flags: Flags) -> FlagParserMap:
 
     return parsers
 
+def find_args(argparsers: FlagParserMap, token: Token, bits_after_token: str) -> Tuple[Dict[str, Any], str]:
+    args = {}
+
+    if token in argparsers:
+        parser = argparsers[token]
+        args = parser.parse_args(bits_after_token.split(' '))
+        args = dict(args._get_kwargs())
+
+        if any('default_argument' in setting.get('patterns', []) for setting in flags[token]):
+            bits_after_token = args.get('default_argument', '')
+
+    return (args, bits_after_token)
+
 
 def fill_in_the_gaps(message: str, tokens: List[Token], flags: Flags) -> List[TokenAndRest]:
     """
@@ -67,15 +80,7 @@ def fill_in_the_gaps(message: str, tokens: List[Token], flags: Flags) -> List[To
         start_index = tokens[0][0]
         token = tokens[0][1]
         bits_after_token = message[start_index + len(token) + 1:]
-        args = {}
-
-        if token in argparsers:
-            parser = argparsers[token]
-            args = parser.parse_args(bits_after_token.split(' '))
-            args = dict(args._get_kwargs())
-
-            if any('default_argument' in setting.get('patterns', []) for setting in flags[token]):
-                bits_after_token = args.get('default_argument', '')
+        args = find_args(argparsers, token, bits_after_token)
 
         return [(start_index, token, bits_after_token, args)]
 
@@ -84,12 +89,14 @@ def fill_in_the_gaps(message: str, tokens: List[Token], flags: Flags) -> List[To
     for (i, (start_index, token)) in enumerate(tokens):
         if i == len(tokens) - 1:
             bits_after_token = message[start_index + len(token) + 1:]
-            builds.append((start_index, token, bits_after_token))
+            args = find_args(argparsers, token, bits_after_token)
+            builds.append((start_index, token, bits_after_token, args))
             continue
 
         end_index = tokens[i + 1][0]
         bits_after_token = message[start_index + len(token) + 1: end_index]
-        builds.append((start_index, token, bits_after_token))
+        args = find_args(argparsers, token, bits_after_token)
+        builds.append((start_index, token, bits_after_token, args))
 
     return builds
 
@@ -143,7 +150,7 @@ def parse(tokens: List[TokenAndRest], known_functions: FunctionMap) -> FuncCallB
             args.append(Constant(first_arg, str))
 
         if len(tokens) > 1:
-            for (start_index, function_name, arg_to_function) in tokens[1:]:
+            for (start_index, function_name, arg_to_function, flags) in tokens[1:]:
                 func = known_functions[function_name]
                 actual_arg = [Constant(arg_to_function, str)] if len(arg_to_function) > 0 else []
                 return_type = func.__annotations__.get('return', None)
