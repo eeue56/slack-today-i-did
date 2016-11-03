@@ -291,7 +291,7 @@ class ElmExtensions(BotExtension):
             for (name, value) in breakdown.items():
                 total_breakdowns[name] += value
 
-        message += '---------------\n'
+        message += '\n---------------\n'
         message += 'For a total of:\n'
         message += ' | '.join(
             f'{name} : {value}' for (name, value) in total_breakdowns.items()
