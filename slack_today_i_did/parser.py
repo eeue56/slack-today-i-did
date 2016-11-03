@@ -1,14 +1,29 @@
-from typing import Any, TypeVar, Callable, List, NamedTuple, Union
+from typing import Any, TypeVar, Callable, Dict, List, Tuple, NamedTuple, Union
 import copy
 import functools
 
+# tokenizer types
+Token = Tuple[int, str]
+TokenAndRest = Tuple[int, str, str]
 
+# parser types
 FuncArg = Union['Constant', 'FuncCall']
-Constant = NamedTuple('Constant', [('value', Any), ('return_type', type)])
-FuncCall = NamedTuple('FuncCall', [('func_name', str), ('args', List[FuncArg]), ('return_type', type)])
+Constant = NamedTuple(
+    'Constant',
+    [('value', Any), ('return_type', type)])
+FuncCall = NamedTuple(
+    'FuncCall',
+    [('func_name', str), ('args', List[FuncArg]), ('return_type', type)])
+FuncCallBinding = NamedTuple(
+    'FuncCallBinding',
+    [('func_call', FuncCall), ('evaluate', Callable[[FuncCall, List[FuncArg]], 'FuncResult'])])
 FuncResult = NamedTuple(
     'FuncResult',
-    [('result', Any), ('action', Callable), ('args', List[Any]), ('errors', List[str])])
+    [('result', Any), ('return_type', type), ('action', Callable), ('args', List[Any]), ('errors', List[str])])
+ArgsResult = NamedTuple(
+    'ArgsResult',
+    [('result', List[Any]), ('return_types', List[type]), ('errors', List[str])])
+FunctionMap = Dict[str, Callable]
 
 
 def metafunc(fn):
@@ -20,7 +35,7 @@ def is_metafunc(fn):
     return getattr(fn, 'is_metafunc', False)
 
 
-def fill_in_the_gaps(message, tokens):
+def fill_in_the_gaps(message: str, tokens: List[Token]) -> List[TokenAndRest]:
     """
         take things that look like [(12, FOR)] turn into [(12, FOR, noah)]
     """
@@ -50,7 +65,7 @@ def fill_in_the_gaps(message, tokens):
     return builds
 
 
-def tokens_with_index(known_tokens, message):
+def tokens_with_index(known_tokens: List[str], message: str) -> List[Token]:
     """ get the tokens out of a message, in order, along with
         the index it was found at
     """
@@ -70,7 +85,7 @@ def tokens_with_index(known_tokens, message):
     return sorted(build, key=lambda x: x[0])
 
 
-def tokenize(text, known_tokens):
+def tokenize(text: str, known_tokens: List[str]) -> List[TokenAndRest]:
     """ Take text and known tokens
     """
 
@@ -80,7 +95,7 @@ def tokenize(text, known_tokens):
     return tokens
 
 
-def parse(tokens, known_functions):
+def parse(tokens: List[TokenAndRest], known_functions: FunctionMap) -> FuncCallBinding:
     args = []
 
     # when we can't find anything
@@ -106,14 +121,18 @@ def parse(tokens, known_functions):
     return_type = action.__annotations__.get('return', None)
     evaluator = functools.partial(evaluate_func_call, known_functions)
 
-    return {
-        'func_call': FuncCall(first_function_name, args, return_type),
-        'evaluate': evaluator,
-    }
+    return FuncCallBinding(
+        FuncCall(first_function_name, args, return_type),
+        evaluator)
 
 
-def evaluate_func_call(known_functions, func_call, default_args=[]) -> FuncResult:
-    all_errors = []
+def evaluate_func_call(
+        known_functions: FunctionMap,
+        func_call: FuncCall,
+        default_args: List[FuncArg] = []) -> FuncResult:
+    """ Evaluate `func_call` in the context of `known_functions`
+        after prepending `default_args` to `func_call`'s arguments
+    """
     action = known_functions[func_call.func_name]
 
     if is_metafunc(action):
@@ -121,12 +140,10 @@ def evaluate_func_call(known_functions, func_call, default_args=[]) -> FuncResul
     else:
         args = default_args + func_call.args
 
-    args_evaluation = evaluate_args(known_functions, args)
-    evaluated_args = args_evaluation['args']
+    args_result = evaluate_args(known_functions, args)
 
-    if len(args_evaluation['errors']) > 0:
-        all_errors.extend(args_evaluation['errors'])
-        return FuncResult(None, None, [], all_errors)
+    if len(args_result.errors) > 0:
+        return FuncResult(None, None, None, [], args_result.errors)
 
     argument_errors = []
 
@@ -134,54 +151,62 @@ def evaluate_func_call(known_functions, func_call, default_args=[]) -> FuncResul
     # https://github.com/python/typing/issues/306 is resolved.
     # `-> ChannelMessages` blows up if you try to copy.deepcopy the annotations.
     annotations = dict(action.__annotations__)
-    annotations.pop('return', None)
+    return_type = annotations.pop('return', None)
     annotations = copy.deepcopy(annotations)
 
     # check arity mismatch
     num_keyword_args = len(action.__defaults__) if action.__defaults__ else 0
     num_positional_args = len(annotations) - num_keyword_args
-    if num_positional_args > len(evaluated_args):
+    if num_positional_args > len(args_result.result):
         argument_errors.append(
-            mismatching_args_messages(action, annotations, evaluated_args)
+            mismatching_args_messages(
+                action,
+                annotations,
+                args_result.result,
+                args_result.return_types
+            )
         )
 
     mismatching_types = mismatching_types_messages(
         action,
         annotations,
-        evaluated_args
+        args_result.result,
+        args_result.return_types
     )
 
     if len(mismatching_types) > 0:
         argument_errors.append(mismatching_types)
 
     if len(argument_errors) > 0:
-        all_errors.extend(argument_errors)
-        return FuncResult(None, None, [], all_errors)
+        return FuncResult(None, None, None, [], argument_errors)
 
     try:
-        return FuncResult(action(*evaluated_args), action, evaluated_args, all_errors)
+        return FuncResult(action(*args_result.result), return_type, action, args_result.result, [])
     except Exception as e:
-        return FuncResult(None, None, [], [exception_error_messages([(func_call.func_name, e)])])
+        error_message = exception_error_messages([(func_call.func_name, e)])
+        return FuncResult(None, None, None, [], [error_message])
 
 
-def evaluate_args(known_functions, args, default_args=[]):
+def evaluate_args(
+        known_functions: FunctionMap,
+        args: List[FuncArg]) -> ArgsResult:
     result = []
+    return_types = []
     all_errors = []
 
-    for arg in default_args + args:
+    for arg in args:
         if isinstance(arg, Constant):
             result.append(arg.value)
+            return_types.append(arg.return_type)
         elif isinstance(arg, FuncCall):
             func_result = evaluate_func_call(known_functions, arg)
             result.append(func_result.result)
+            return_types.append(func_result.return_type)
 
             if len(func_result.errors) > 0:
                 all_errors.extend(func_result.errors)
 
-    return {
-        'args': result,
-        'errors': all_errors,
-    }
+    return ArgsResult(result, return_types, all_errors)
 
 
 def exception_error_messages(errors) -> str:
@@ -197,7 +222,7 @@ def exception_error_messages(errors) -> str:
     return message
 
 
-def mismatching_args_messages(action, annotations, args) -> str:
+def mismatching_args_messages(action, annotations, arg_values, arg_types) -> str:
     message = f'I wanted things to look like for function `{action.__name__}`:\n'  # noqa: E501
     message += '```\n'
 
@@ -209,26 +234,27 @@ def mismatching_args_messages(action, annotations, args) -> str:
 
     message += "\nBut you gave me:\n"
     message += '```\n'
-    message += '\n'.join(f'- {arg} : {arg_type}' for (arg, arg_type) in args)
+    message += '\n'.join(f'- {arg_value} : {arg_type}'
+                         for (arg_value, arg_type) in zip(arg_values, arg_types))
     message += '\n```'
 
-    if len(annotations) < len(args):
+    if len(annotations) < len(arg_values):
         return f'Too many arguments!\n{message}'
     else:
         return f'Need some more arguments!\n{message}'
 
 
-def mismatching_types_messages(action, annotations, args) -> str:
+def mismatching_types_messages(action, annotations, arg_values, arg_types) -> str:
     messages = []
 
-    for (arg, (arg_name, annotation)) in zip(args, annotations.items()):
-        if annotation != Any and not isinstance(annotation, TypeVar):
+    for (arg_value, arg_type, (arg_name, annotation)) in zip(arg_values, arg_types, annotations.items()):
+        if annotation == Any or isinstance(annotation, TypeVar):
             continue
 
-        if arg.return_type != annotation:
+        if arg_type != annotation:
             messages.append(f'Type mistmach for function `{action.__name__}`')
             messages.append(
-                f'You tried to give me a `{arg.return_type}` but I wanted a `{annotation}` for the arg `{arg_name}`!'  # noqa: E501
+                f'You tried to give me a `{arg_type}` but I wanted a `{annotation}` for the arg `{arg_name}`!'  # noqa: E501
             )
 
     return '\n'.join(messages)

@@ -1,4 +1,4 @@
-import json
+from slack_today_i_did.type_aware import json
 
 
 def makes_state_change(f):
@@ -47,12 +47,15 @@ class CommandHistory(object):
         return True
 
     @saves_state
-    def load_from_file(self, known_tokens, filename: str) -> None:
+    def load_from_file(self, known_tokens, known_types, filename: str) -> None:
         """ Load command history from a file """
         try:
             with open(filename) as f:
-                as_json = json.load(f)
+                as_json = json.load(f, known_types=known_types)
         except FileNotFoundError:
+            return
+        except:
+            # sometimes bad things happen to good people
             return
 
         for (channel, commands) in as_json['channels'].items():
@@ -63,15 +66,20 @@ class CommandHistory(object):
     @saves_state
     def save_to_file(self, filename: str) -> None:
         """ save command history to a file """
-        with open(filename, 'w') as f:
-            channels = {
-                'channels': {
-                    channel: [self._command_entry_to_json(command) for command in commands]
-                    for (channel, commands) in self.history.items()
-                }
+        channels = {
+            'channels': {
+                channel: [self._command_entry_to_json(command) for command in commands]
+                for (channel, commands) in self.history.items()
             }
+        }
 
-            json.dump(channels, f)
+        # if we can't save it, exit early
+        try:
+            channel_json = json.dumps(channels)
+            with open(filename, 'w') as f:
+                f.write(channel_json)
+        except:
+            return None
 
         self.needs_save = False
 
@@ -83,7 +91,7 @@ class CommandHistory(object):
             'args': command_entry['args']
         }
 
-    def _no_longer_exists(self, *args, **kwargs) -> None:
+    def _no_longer_exists(self, *args, **kwargs) -> str:
         return 'this thing no longer exists!'
 
     def _command_entry_from_json(self, known_tokens, json):

@@ -16,7 +16,7 @@ from slack_today_i_did.extensions import (
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, RollbarExtensions,
-    ElmExtensions
+    ElmExtensions, ExtensionExtensions
 )
 
 from slack_today_i_did.generic_bot import GenericSlackBot, ChannelMessage, ChannelMessages
@@ -27,7 +27,7 @@ class Extensions(
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, RollbarExtensions,
-    ElmExtensions
+    ElmExtensions, ExtensionExtensions
 ):
     pass
 
@@ -45,6 +45,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
         self._setup_notify()
         self._setup_sessions()
         self._setup_command_history()
+        self._setup_enabled_tokens()
 
     def _setup_from_kwargs_and_remove_fields(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         rollbar_token = kwargs.pop('rollbar_token', None)
@@ -54,6 +55,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             self.rollbar = Rollbar(rollbar_token)
 
         self.repo = kwargs.pop('elm_repo', None)
+        self.reports_dir = kwargs.pop('reports_dir', 'reports')
         self.known_names_file = kwargs.pop('known_names_file', 'names.json')
         self.notify_file = kwargs.pop('notify_file', 'notify.json')
         self.session_file = kwargs.pop('session_file', 'sessions.json')
@@ -62,7 +64,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
 
     def _setup_command_history(self) -> None:
         known_functions = {action.__name__: action for action in self.known_functions().values()}
-        self.command_history.load_from_file(known_functions, self.command_history_file)
+        self.command_history.load_from_file(known_functions, (ChannelMessages,), self.command_history_file)
 
     @property
     def features_enabled(self):
@@ -163,7 +165,16 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'forget': self.stop_listening,
 
             'start-session': self.start_session,
-            'end-session': self.end_session
+            'end-session': self.end_session,
+
+            'tokens-status': self.tokens_status,
+            'disable-token': self.disable_token,
+            'enable-token': self.enable_token,
+
+            'known-ext': self.known_extensions,
+            'disable-ext': self.disable_extension,
+            'enable-ext': self.enable_extension,
+            'load-ext': self.load_extension
         }
 
     def reload_branch(self, channel: str, branch: str = None) -> ChannelMessages:
@@ -174,7 +185,10 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             if branch.startswith('HEAD DETACHED'):
                 return []
 
-            branch = branch.lstrip('On branch')
+            on_branch_message = 'On branch'
+
+            if branch.startswith(on_branch_message):
+                branch = branch[len(on_branch_message):]
 
         self_aware.git_checkout(branch)
         self_aware.restart_program()

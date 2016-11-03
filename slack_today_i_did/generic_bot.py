@@ -91,7 +91,10 @@ class GenericSlackBot(BetterSlack):
 
         # we only tokenize those that talk to me
         if self.was_directed_at_me(text):
-            text = text.lstrip(f'<@{self.user_id}>').strip()
+            user_id_string = f'<@{self.user_id}>'
+
+            if text.startswith(user_id_string):
+                text = text[len(user_id_string):].strip()
         else:
             return None
 
@@ -107,8 +110,8 @@ class GenericSlackBot(BetterSlack):
         if stuff is None:
             return
 
-        func_call = stuff['func_call']
-        evaluate = stuff['evaluate']
+        func_call = stuff.func_call
+        evaluate = stuff.evaluate
 
         # we always give the channel as the first arg
         default_args = [parser.Constant(channel, str)]
@@ -153,7 +156,6 @@ class GenericSlackBot(BetterSlack):
 
     def parse_messages(self, messages):
         for message in messages:
-            print(message)
             self.parse_message(message)
 
     def error_help(self, channel: str, problem: str) -> ChannelMessages:
