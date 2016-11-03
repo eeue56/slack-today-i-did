@@ -154,8 +154,6 @@ class ElmRepo(OurRepo):
                 return self._import_cache[filename]
 
         import_lines = []
-
-
         in_comment = False
 
         with open(filename) as f:
