@@ -2,6 +2,7 @@ import datetime
 from typing import List
 import json
 import re
+from collections import defaultdict
 import importlib
 import types
 
@@ -454,9 +455,12 @@ class ElmExtensions(BotExtension):
         self.repo.get_ready()
         message = "We have found the following filenames:\n"
 
-        files = self.repo.get_017_porting_breakdown(filename_pattern)
+        with self.repo.cached_lookups():
+            files = self.repo.get_017_porting_breakdown(filename_pattern)
 
         message += f'Here\'s the breakdown for the:'
+
+        total_breakdowns = defaultdict(int)
 
         for (filename, breakdown) in files.items():
             total_hardness = sum(breakdown.values())
@@ -464,5 +468,14 @@ class ElmExtensions(BotExtension):
             message += ' | '.join(
                 f'{name} : {value}' for (name, value) in breakdown.items()
             )
+
+            for (name, value) in breakdown.items():
+                total_breakdowns[name] += value
+
+        message += '\n---------------\n'
+        message += 'For a total of:\n'
+        message += ' | '.join(
+            f'{name} : {value}' for (name, value) in total_breakdowns.items()
+        )
 
         return ChannelMessage(channel, message)
