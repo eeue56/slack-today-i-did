@@ -157,10 +157,8 @@ class ElmRepo(OurRepo):
 
         with open(filename) as f:
             for line in f:
-                if line.startswith('import'):
-                    without_import = line.lstrip('import ')
-                    just_the_module = without_import.split(' ')[0]
-
+                if line.startswith('import '):
+                    just_the_module = 'import '.join(line.split('import ')[1:])
                     import_lines.append(just_the_module)
                 elif not (line.startswith('module') or line.startswith(' ')):
                     # we're past the imports
