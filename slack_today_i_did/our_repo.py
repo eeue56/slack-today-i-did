@@ -66,6 +66,7 @@ class ElmRepo(OurRepo):
         self._known_files = {ElmVersion.v_016: [], ElmVersion.v_017: []}
         self._breakdown_cache = {}
         self._import_cache = {}
+        self._breakdown_lock = False
 
     def get_elm_files(self) -> List[str]:
         return glob.glob(f'{self.repo_dir}/**/*.elm', recursive=True)
