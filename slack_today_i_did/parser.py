@@ -1,10 +1,15 @@
 from typing import Any, TypeVar, Callable, Dict, List, Tuple, NamedTuple, Union
 import copy
 import functools
+import argparse
+
 
 # tokenizer types
 Token = Tuple[int, str]
-TokenAndRest = Tuple[int, str, str]
+TokenAndRest = Tuple[int, str, str, Any]
+Flags = Dict[str, List[Dict[str, Any]]]
+
+FlagParserMap = Dict[str, argparse.ArgumentParser]
 
 # parser types
 FuncArg = Union['Constant', 'FuncCall']
@@ -35,20 +40,44 @@ def is_metafunc(fn):
     return getattr(fn, 'is_metafunc', False)
 
 
-def fill_in_the_gaps(message: str, tokens: List[Token]) -> List[TokenAndRest]:
+def generate_argparsers(flags: Flags) -> FlagParserMap:
+    parsers = {}
+
+    for (token, settings) in flags.items():
+        parser = argparse.ArgumentParser()
+        for setting in settings:
+            patterns = setting.get('patterns', [])
+            parser.add_argument(*patterns, action=setting.get('action', None))
+        parsers[token] = parser
+
+    return parsers
+
+
+def fill_in_the_gaps(message: str, tokens: List[Token], flags: Flags) -> List[TokenAndRest]:
     """
-        take things that look like [(12, FOR)] turn into [(12, FOR, noah)]
+        take things that look like [(12, FOR)] turn into [(12, FOR, noah, **kwargs)]
     """
 
     if len(tokens) < 1:
         return []
 
+    argparsers = generate_argparsers(flags)
+
     if len(tokens) == 1:
         start_index = tokens[0][0]
         token = tokens[0][1]
         bits_after_token = message[start_index + len(token) + 1:]
+        args = {}
 
-        return [(start_index, token, bits_after_token)]
+        if token in argparsers:
+            parser = argparsers[token]
+            args = parser.parse_args(bits_after_token.split(' '))
+            args = dict(args._get_kwargs())
+
+            if any('default_argument' in setting.get('patterns', []) for setting in flags[token]):
+                bits_after_token = args.get('default_argument', '')
+
+        return [(start_index, token, bits_after_token, args)]
 
     builds = []
 
@@ -85,12 +114,15 @@ def tokens_with_index(known_tokens: List[str], message: str) -> List[Token]:
     return sorted(build, key=lambda x: x[0])
 
 
-def tokenize(text: str, known_tokens: List[str]) -> List[TokenAndRest]:
+def tokenize(text: str, known_tokens: List[str], flags: Flags=None) -> List[TokenAndRest]:
     """ Take text and known tokens
     """
 
+    if flags is None:
+        flags = {}
+
     text = text.strip()
-    tokens = fill_in_the_gaps(text, tokens_with_index(known_tokens, text))
+    tokens = fill_in_the_gaps(text, tokens_with_index(known_tokens, text), flags)
 
     return tokens
 
