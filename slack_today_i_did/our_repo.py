@@ -155,11 +155,21 @@ class ElmRepo(OurRepo):
         import_lines = []
 
 
+        in_comment = False
+
         with open(filename) as f:
             for line in f:
-                if line.startswith('import '):
+                if in_comment:
+                    if line.strip().endswith('-}'):
+                        in_comment = False
+                elif line.startswith('import '):
                     just_the_module = 'import '.join(line.split('import ')[1:])
                     import_lines.append(just_the_module)
+                elif line.strip().startswith('{-'):
+                    if line.strip().endswith('-}'):
+                        in_comment = False
+                    else:
+                        in_comment = True
                 elif not (line.startswith('module') or line.startswith(' ')):
                     # we're past the imports
                     break
