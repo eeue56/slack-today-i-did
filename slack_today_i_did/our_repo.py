@@ -66,7 +66,7 @@ class ElmRepo(OurRepo):
         self._known_files = {ElmVersion.v_016: [], ElmVersion.v_017: []}
         self._breakdown_cache = {}
         self._import_cache = {}
-        self._breakdown_lock = False
+        self._caching_lookups = False
 
     def get_elm_files(self) -> List[str]:
         return glob.glob(f'{self.repo_dir}/**/*.elm', recursive=True)
@@ -112,20 +112,20 @@ class ElmRepo(OurRepo):
         return all_files
 
     @contextmanager
-    def lock(self) -> None:
-        self.create_lock()
+    def cached_lookups(self) -> None:
+        self.create_cache()
         yield
-        self.remove_lock()
+        self.end_cache()
 
-    def create_lock(self) -> None:
-        """ create a lock so that caches can be used to make some calcs faster """
-        self._breakdown_lock = True
+    def create_cache(self) -> None:
+        """ create a cache so they can be used to make some calcs faster """
+        self._caching_lookups = True
         self._breakdown_cache = {}
         self._import_cache = {}
 
-    def remove_lock(self) -> None:
+    def end_cache(self) -> None:
         """ removes a lock so caches are no longer used """
-        self._breakdown_lock = False
+        self._caching_lookups = False
 
     def get_017_porting_breakdown(self, pattern: str) -> Dict[str, Dict[str, int]]:  # noqa: E501
         all_files = self.get_matching_filenames(pattern)
@@ -149,7 +149,7 @@ class ElmRepo(OurRepo):
     def file_import_list(self, filename: str) -> List[str]:
         """ returns the list of modules imported by a file """
 
-        if self._breakdown_lock:
+        if self._caching_lookups:
             if filename in self._import_cache:
                 return self._import_cache[filename]
 
@@ -173,7 +173,7 @@ class ElmRepo(OurRepo):
                     # we're past the imports
                     break
 
-        if self._breakdown_lock:
+        if self._caching_lookups:
             self._import_cache[filename] = import_lines
 
         return import_lines
@@ -181,7 +181,7 @@ class ElmRepo(OurRepo):
     def how_hard_to_port(self, filename: str) -> Dict[str, int]:
         """ returns a breakdown of how hard a file is to port 0.16 -> 0.17 """
 
-        if self._breakdown_lock:
+        if self._caching_lookups:
             if filename in self._breakdown_cache:
                 return self._breakdown_cache[filename]
 
@@ -203,7 +203,7 @@ class ElmRepo(OurRepo):
             html_count = text.count(' Html')
             breakdown['Html stuff'] = html_count
 
-        if self._breakdown_lock:
+        if self._caching_lookups:
             self._breakdown_cache[filename] = breakdown
 
         return breakdown

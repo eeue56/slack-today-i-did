@@ -455,7 +455,7 @@ class ElmExtensions(BotExtension):
         self.repo.get_ready()
         message = "We have found the following filenames:\n"
 
-        with self.repo.lock():
+        with self.repo.cached_lookups():
             files = self.repo.get_017_porting_breakdown(filename_pattern)
 
         message += f'Here\'s the breakdown for the:'
