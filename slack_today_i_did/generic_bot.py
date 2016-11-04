@@ -59,6 +59,9 @@ class GenericSlackBot(BetterSlack):
     def known_functions(self):
         return {**self.known_user_functions(), **self.known_statements()}
 
+    def known_flags(self):
+        return {}
+
     def known_user_functions(self):
         return {
             'func-that-return': self.functions_that_return,
@@ -98,7 +101,7 @@ class GenericSlackBot(BetterSlack):
         else:
             return None
 
-        tokens = parser.tokenize(text, self.known_tokens())
+        tokens = parser.tokenize(text, self.known_tokens(), flags=self.known_flags())
         return parser.parse(tokens, self.known_functions())
 
     def _actually_parse_message(self, message):

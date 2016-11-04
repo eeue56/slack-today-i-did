@@ -123,7 +123,7 @@ def test_tokens_with_index_on_token_with_flags():
     assert first_token[2] == 'me'
     assert first_token[3].get('save') == True
 
-    assert second_token[0] == 11
+    assert second_token[0] == 16
     assert second_token[1] == 'NOW'
     assert second_token[2] == ''
     assert len(second_token[3]) == 0
@@ -141,7 +141,7 @@ def test_parse_first_func_not_in_known_funcs():
     # `eval` trusts tokenize to have extracted
     # only known function names into tokens
     with pytest.raises(KeyError):
-        stuff = parser.parse([(0, 'help', ''), (0, 'hello', 'dave')], MOCK_TOKENS)
+        stuff = parser.parse([(0, 'help', '', {}), (0, 'hello', 'dave', {})], MOCK_TOKENS)
 
 
 def test_eval_help_with_arg():
@@ -169,7 +169,7 @@ def test_eval_help_with_badly_spelled_function():
 
 def test_eval_first_func_with_one_arg():
     known_funcs = {'hello': lambda x:x}
-    stuff = parser.parse([(0, 'hello', 'world')], known_funcs)
+    stuff = parser.parse([(0, 'hello', 'world', {})], known_funcs)
 
     assert stuff.func_call.func_name == 'hello'
     assert stuff.func_call.args == [parser.Constant('world', str)]
@@ -183,7 +183,7 @@ def test_eval_second_func_with_one_arg():
     known_funcs = {'cocoa': lambda x:x + 'cocoa', 'double': lambda x:x * 2}
     known_funcs['double'].__annotations__['return'] = str
 
-    stuff = parser.parse([(0, 'cocoa', ''), (0, 'double', 'cream')], known_funcs)
+    stuff = parser.parse([(0, 'cocoa', '', {}), (0, 'double', 'cream', {})], known_funcs)
 
     assert stuff.func_call.func_name == 'cocoa'
     assert stuff.func_call.args == [parser.FuncCall('double', [parser.Constant('cream', str)], str)]
@@ -196,7 +196,7 @@ def test_eval_second_func_with_one_arg():
 def test_eval_second_func_with_error():
     known_funcs = {'cocoa': lambda x:x + 'cocoa', 'koan': lambda x: 1 / 0}
 
-    stuff = parser.parse([(0, 'cocoa', ''), (0, 'koan', 'x')], known_funcs)
+    stuff = parser.parse([(0, 'cocoa', '', {}), (0, 'koan', 'x', {})], known_funcs)
 
     assert stuff.func_call.func_name == 'cocoa'
     assert stuff.func_call.args == [parser.FuncCall('koan', [parser.Constant('x', str)], None)]
@@ -211,7 +211,7 @@ def test_eval_type_mismtach():
         return 1 / 0
     known_funcs = {'koan': koan}
 
-    stuff = parser.parse([(0, 'koan', 'x')], known_funcs)
+    stuff = parser.parse([(0, 'koan', 'x', {})], known_funcs)
 
     assert stuff.func_call.func_name == 'koan'
     assert stuff.func_call.args == [parser.Constant('x', str)]
@@ -226,7 +226,7 @@ def test_eval_arg_mismtach():
         return a + b + ' more'
     known_funcs = {'more': more}
 
-    stuff = parser.parse([(0, 'more', 'x')], known_funcs)
+    stuff = parser.parse([(0, 'more', 'x', {})], known_funcs)
 
     assert stuff.func_call.func_name == 'more'
     assert stuff.func_call.args == [parser.Constant('x', str)]

@@ -52,12 +52,19 @@ def generate_argparsers(flags: Flags) -> FlagParserMap:
 
     return parsers
 
-def find_args(argparsers: FlagParserMap, token: Token, bits_after_token: str) -> Tuple[Dict[str, Any], str]:
+
+def find_args(
+    flags: Flags,
+    argparsers: FlagParserMap,
+    token: Token,
+    bits_after_token: str
+)-> Tuple[Dict[str, Any], str]:
     args = {}
 
     if token in argparsers:
         parser = argparsers[token]
-        args = parser.parse_args(bits_after_token.split(' '))
+        words = bits_after_token.strip().split()
+        args = parser.parse_args(words)
         args = dict(args._get_kwargs())
 
         if any('default_argument' in setting.get('patterns', []) for setting in flags[token]):
@@ -80,7 +87,7 @@ def fill_in_the_gaps(message: str, tokens: List[Token], flags: Flags) -> List[To
         start_index = tokens[0][0]
         token = tokens[0][1]
         bits_after_token = message[start_index + len(token) + 1:]
-        args = find_args(argparsers, token, bits_after_token)
+        (args, bits_after_token) = find_args(flags, argparsers, token, bits_after_token)
 
         return [(start_index, token, bits_after_token, args)]
 
@@ -89,13 +96,13 @@ def fill_in_the_gaps(message: str, tokens: List[Token], flags: Flags) -> List[To
     for (i, (start_index, token)) in enumerate(tokens):
         if i == len(tokens) - 1:
             bits_after_token = message[start_index + len(token) + 1:]
-            args = find_args(argparsers, token, bits_after_token)
+            (args, bits_after_token) = find_args(flags, argparsers, token, bits_after_token)
             builds.append((start_index, token, bits_after_token, args))
             continue
 
         end_index = tokens[i + 1][0]
         bits_after_token = message[start_index + len(token) + 1: end_index]
-        args = find_args(argparsers, token, bits_after_token)
+        (args, bits_after_token) = find_args(flags, argparsers, token, bits_after_token)
         builds.append((start_index, token, bits_after_token, args))
 
     return builds
