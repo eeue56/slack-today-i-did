@@ -11,6 +11,21 @@ def bot():
     return GenericSlackBot('')
 
 
+def test_func_that_return(mocker, bot, message_context):
+    mocked_channel_message = mocker.patch.object(bot, 'send_channel_message')
+
+    with message_context(bot, sender=MOCK_PERSON):
+        bot.parse_direct_message({
+            'user': MOCK_PERSON,
+            'channel': MOCK_CHANNEL,
+            'text': 'func-that-return None'
+        })
+
+    assert MOCK_CHANNEL == mocked_channel_message.call_args[0][0]
+    assert "The following functions return" in mocked_channel_message.call_args[0][1]
+    assert mocked_channel_message.call_count == 1
+
+
 def test_help_without_arg(mocker, bot, message_context):
     mocked_channel_message = mocker.patch.object(bot, 'send_channel_message')
 
@@ -26,7 +41,7 @@ def test_help_without_arg(mocker, bot, message_context):
     assert mocked_channel_message.call_count == 1
 
 
-def test_help_on_func(mocker, bot, message_context):
+def test_help_on_metafunc(mocker, bot, message_context):
     mocked_channel_message = mocker.patch.object(bot, 'send_channel_message')
 
     with message_context(bot, sender=MOCK_PERSON):
@@ -38,6 +53,23 @@ def test_help_on_func(mocker, bot, message_context):
 
     assert MOCK_CHANNEL == mocked_channel_message.call_args[0][0]
     assert "I'll tell you about it" in mocked_channel_message.call_args[0][1]
+    assert "FuncArg" not in mocked_channel_message.call_args[0][1]
+    assert mocked_channel_message.call_count == 1
+
+
+def test_help_on_func(mocker, bot, message_context):
+    mocked_channel_message = mocker.patch.object(bot, 'send_channel_message')
+
+    with message_context(bot, sender=MOCK_PERSON):
+        bot.parse_direct_message({
+            'user': MOCK_PERSON,
+            'channel': MOCK_CHANNEL,
+            'text': 'help func-that-return'
+        })
+
+    assert MOCK_CHANNEL == mocked_channel_message.call_args[0][0]
+    assert "functions that return things" in mocked_channel_message.call_args[0][1]
+    assert "text : <class 'str'>" in mocked_channel_message.call_args[0][1]
     assert mocked_channel_message.call_count == 1
 
 

@@ -8,6 +8,7 @@ import os
 import glob
 from typing import List, Dict
 from enum import Enum
+from contextlib import contextmanager
 
 
 class OurRepo(object):
@@ -22,7 +23,7 @@ class OurRepo(object):
 
     def _git_init(self) -> None:
         if len(self.token) == 0:
-            url = 'https://github.com/{self.org}/{self.repo}.git'
+            url = f'https://github.com/{self.org}/{self.repo}.git'
         else:
             url = f'https://{self.token}@github.com/{self.org}/{self.repo}.git'
 
@@ -72,6 +73,9 @@ class ElmRepo(OurRepo):
     def __init__(self, *args, **kwargs):
         OurRepo.__init__(self, *args, **kwargs)
         self._known_files = {ElmVersion.v_016: [], ElmVersion.v_017: []}
+        self._breakdown_cache = {}
+        self._import_cache = {}
+        self._caching_lookups = False
 
     def get_elm_files(self) -> List[str]:
         return glob.glob(f'{self.repo_dir}/**/*.elm', recursive=True)
@@ -108,20 +112,87 @@ class ElmRepo(OurRepo):
             if self.what_kinda_file(filename) == ElmVersion.v_017
         ]
 
-    def get_017_porting_breakdown(self, pattern: str) -> Dict[str, Dict[str, int]]:  # noqa: E501
+    def get_matching_filenames(self, pattern: str) -> List[str]:
         pattern = pattern.replace('.', '/')
         all_files = glob.glob(
             f'{self.repo_dir}/**/{pattern}.elm',
             recursive=True
         )
+        return all_files
 
-        return {
+    @contextmanager
+    def cached_lookups(self) -> None:
+        self.create_cache()
+        yield
+        self.end_cache()
+
+    def create_cache(self) -> None:
+        """ create a cache so they can be used to make some calcs faster """
+        self._caching_lookups = True
+        self._breakdown_cache = {}
+        self._import_cache = {}
+
+    def end_cache(self) -> None:
+        """ removes a lock so caches are no longer used """
+        self._caching_lookups = False
+
+    def get_017_porting_breakdown(self, pattern: str) -> Dict[str, Dict[str, int]]:  # noqa: E501
+        all_files = self.get_matching_filenames(pattern)
+
+        breakdown = {
             filename: self.how_hard_to_port(filename) for filename in all_files
             if self.what_kinda_file(filename) == ElmVersion.v_016
         }
 
+        if len(all_files) == 1:
+            imports = self.file_import_list(all_files[0])
+            for import_ in imports:
+                file_names = self.get_matching_filenames(import_)
+
+                if not any(name in breakdown for name in file_names):
+                    import_breakdown = self.get_017_porting_breakdown(import_)
+                    breakdown.update(import_breakdown)
+
+        return breakdown
+
+    def file_import_list(self, filename: str) -> List[str]:
+        """ returns the list of modules imported by a file """
+
+        if self._caching_lookups:
+            if filename in self._import_cache:
+                return self._import_cache[filename]
+
+        import_lines = []
+        in_comment = False
+
+        with open(filename) as f:
+            for line in f:
+                if in_comment:
+                    if line.strip().endswith('-}'):
+                        in_comment = False
+                elif line.startswith('import '):
+                    just_the_module = 'import '.join(line.split('import ')[1:])
+                    import_lines.append(just_the_module)
+                elif line.strip().startswith('{-'):
+                    if line.strip().endswith('-}'):
+                        in_comment = False
+                    else:
+                        in_comment = True
+                elif not (line.startswith('module') or line.startswith(' ')):
+                    # we're past the imports
+                    break
+
+        if self._caching_lookups:
+            self._import_cache[filename] = import_lines
+
+        return import_lines
+
     def how_hard_to_port(self, filename: str) -> Dict[str, int]:
         """ returns a breakdown of how hard a file is to port 0.16 -> 0.17 """
+
+        if self._caching_lookups:
+            if filename in self._breakdown_cache:
+                return self._breakdown_cache[filename]
 
         breakdown = {}
 
@@ -140,6 +211,9 @@ class ElmRepo(OurRepo):
         if ' Html' in text:
             html_count = text.count(' Html')
             breakdown['Html stuff'] = html_count
+
+        if self._caching_lookups:
+            self._breakdown_cache[filename] = breakdown
 
         return breakdown
 

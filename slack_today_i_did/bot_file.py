@@ -16,10 +16,11 @@ from slack_today_i_did.extensions import (
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, RollbarExtensions,
-    ElmExtensions, DeployComplexityExtensions
+    ElmExtensions, DeployComplexityExtensions,
+    ExtensionExtensions
 )
 
-from slack_today_i_did.generic_bot import GenericSlackBot
+from slack_today_i_did.generic_bot import GenericSlackBot, ChannelMessage, ChannelMessages
 import slack_today_i_did.self_aware as self_aware
 
 
@@ -27,7 +28,8 @@ class Extensions(
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, RollbarExtensions,
-    ElmExtensions, DeployComplexityExtensions
+    ElmExtensions, DeployComplexityExtensions,
+    ExtensionExtensions
 ):
     pass
 
@@ -46,6 +48,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
         self._setup_sessions()
         self._setup_command_history()
         self._setup_deploy_complexity()
+        self._setup_enabled_tokens()
 
     def _setup_from_kwargs_and_remove_fields(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         rollbar_token = kwargs.pop('rollbar_token', None)
@@ -59,11 +62,12 @@ class TodayIDidBot(Extensions, GenericSlackBot):
         self.notify_file = kwargs.pop('notify_file', 'notify.json')
         self.session_file = kwargs.pop('session_file', 'sessions.json')
         self.command_history_file = kwargs.pop('command_history_file', 'command_history.json')
+        self.reports_dir = kwargs.pop('reports_dir', 'reports')
         return kwargs
 
     def _setup_command_history(self) -> None:
         known_functions = {action.__name__: action for action in self.known_functions().values()}
-        self.command_history.load_from_file(known_functions, self.command_history_file)
+        self.command_history.load_from_file(known_functions, (ChannelMessages,), self.command_history_file)
 
     @property
     def features_enabled(self):
@@ -166,23 +170,37 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'start-session': self.start_session,
             'end-session': self.end_session,
 
-            'deployed': self.last_prs
+            'deployed': self.last_prs,
+
+            'tokens-status': self.tokens_status,
+            'disable-token': self.disable_token,
+            'enable-token': self.enable_token,
+
+            'known-ext': self.known_extensions,
+            'disable-ext': self.disable_extension,
+            'enable-ext': self.enable_extension,
+            'load-ext': self.load_extension
         }
 
-    def reload_branch(self, channel: str, branch: str = None) -> None:
+    def reload_branch(self, channel: str, branch: str = None) -> ChannelMessages:
         """ reload a branch and trigger a restart """
 
         if branch is None:
             branch = self_aware.git_current_version()
             if branch.startswith('HEAD DETACHED'):
-                return
+                return []
 
-            branch = branch.lstrip('On branch')
+            on_branch_message = 'On branch'
+
+            if branch.startswith(on_branch_message):
+                branch = branch[len(on_branch_message):]
 
         self_aware.git_checkout(branch)
         self_aware.restart_program()
 
-    def status(self, channel: str, show_all: str = None) -> None:
+        return []
+
+    def status(self, channel: str, show_all: str = None) -> ChannelMessages:
         """ provides meta information about the bot """
 
         current_version = self_aware.git_current_version()
@@ -202,8 +220,8 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             message += f'Main repo: {self.repo.repo_dir}\n'
             message += f'Main repo: {self.deploy_complexity_repo.repo_dir}\n'
 
-        self.send_channel_message(channel, message)
+        return ChannelMessage(channel, message)
 
-    def party(self, channel: str) -> None:
+    def party(self, channel: str) -> ChannelMessages:
         """ TADA """
-        self.send_channel_message(channel, ':tada:')
+        return ChannelMessage(channel, ':tada:')

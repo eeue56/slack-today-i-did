@@ -1,4 +1,5 @@
 import pytest
+from typing import Union
 import os
 import slack_today_i_did.command_history as command_history
 
@@ -14,6 +15,8 @@ def MOCK_FUNCTION():
 MOCK_KNOWN_TOKENS = {
     'MOCK_FUNCTION': MOCK_FUNCTION
 }
+MOCK_UNION = Union[int, str]
+MOCK_KNOWN_TYPES = (MOCK_UNION,)
 
 
 def test_add_pattern():
@@ -34,20 +37,19 @@ def test_add_pattern():
 
 
 def test_saving_and_loading(tmpdir):
+    history_file = str(tmpdir.join(MOCK_TEST_FILE))
     commands = command_history.CommandHistory()
-    commands.load_from_file(MOCK_KNOWN_TOKENS, MOCK_TEST_FILE)
+    commands.load_from_file(MOCK_KNOWN_TOKENS, MOCK_KNOWN_TYPES, history_file)
     assert commands.last_command(MOCK_CHANNEL) is None
     assert commands.needs_save == False
 
-    commands.add_command(MOCK_CHANNEL, MOCK_FUNCTION, [])
-    commands.save_to_file(MOCK_TEST_FILE)
+    commands.add_command(MOCK_CHANNEL, MOCK_FUNCTION, [MOCK_UNION])
+    commands.save_to_file(history_file)
 
     assert commands.last_command(MOCK_CHANNEL) is not None
 
     new_commands = command_history.CommandHistory()
-    new_commands.load_from_file(MOCK_KNOWN_TOKENS, MOCK_TEST_FILE)
+    new_commands.load_from_file(MOCK_KNOWN_TOKENS, MOCK_KNOWN_TYPES, history_file)
 
     assert new_commands.last_command(MOCK_CHANNEL) is not None
     assert commands == new_commands
-
-    os.remove(MOCK_TEST_FILE)

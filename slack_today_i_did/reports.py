@@ -12,7 +12,8 @@ class Report(object):
             time_to_run: Tuple[int, int],
             people,
             wait: Tuple[int, int],
-            time_run=None
+            time_run=None,
+            reports_dir='reports',
     ):
         self.name = name
         self.people_to_bother = people
@@ -21,21 +22,25 @@ class Report(object):
         self.time_run = time_run
         self.wait_for = wait
         self.time_to_run = time_to_run
+        self.reports_dir = reports_dir
         self.is_ended = False
         self.last_day_run = None
 
-    def bother_people(self, client):
+    def bother_people(self):
         if not self.people_to_bother:
-            return
+            return []
 
         self.responses = {}
         self.time_run = datetime.datetime.utcnow()
-        client.send_channel_message(self.channel, 'Starting my report!')
+        messages = []
+        messages.append((self.channel, 'Starting my report!'))
 
         for person in self.people_to_bother[:]:
-            client.send_message(person, 'Sorry to bother you!')
+            messages.append((person, 'Sorry to bother you!'))
             self.add_response(person, '')
             self.people_to_bother.remove(person)
+
+        return messages
 
     def is_time_to_bother_people(self) -> bool:
         if self.is_ended:
@@ -95,11 +100,11 @@ class Report(object):
         self.save_responses()
 
     def save_responses(self):
-        with open(f'reports/report-{self.name}-{self.channel}-{self.time_run}.json', 'w') as f:  # noqa: E501
+        with open(f'{self.reports_dir}/report-{self.name}-{self.channel}-{self.time_run}.json', 'w') as f:  # noqa: E501
             json.dump(self.responses, f)
 
     def save(self):
-        with open(f'reports/report-config-{self.name}-{self.channel}.json', 'w') as f:  # noqa: E501
+        with open(f'{self.reports_dir}/report-config-{self.name}-{self.channel}.json', 'w') as f:  # noqa: E501
             json.dump(f, self.as_dict())
 
     def as_dict(self):
