@@ -496,7 +496,16 @@ class DeployComplexityExtensions(BotExtension):
 
         script_location = f'{self.deploy_complexity_repo.repo_dir}/deploy-complexity.rb'
 
-        output = subprocess.check_output([script_location, "--git-dir", self.repo.repo_dir])
+        output = subprocess.check_output([
+            script_location,
+            "--git-dir",
+            self.repo.repo_dir,
+            "staging",
+            "-d",
+            "1",
+            "--gh-url",
+            f"https://github.com/{self.repo.org}/{self.repo.repo}"
+        ])
 
         message = output.decode()
 
