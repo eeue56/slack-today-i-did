@@ -486,11 +486,10 @@ class DeployComplexityExtensions(BotExtension):
     def _setup_deploy_complexity(self) -> None:
         self.deploy_complexity_repo = OurRepo('repos', "", "NoRedInk", "deploy-complexity")
 
-    def last_prs(self, channel: str) -> None:
+    def last_prs(self, channel: str) -> ChannelMessages:
         """ list the PRs in the main repo """
 
-        print(self.deploy_complexity_repo)
-        print(self.repo)
+
         self.deploy_complexity_repo.get_ready()
         self.repo.get_ready()
 
