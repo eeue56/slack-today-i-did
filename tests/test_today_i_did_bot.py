@@ -48,7 +48,7 @@ def test_save_and_load_known_user_func_history(mocker, bot, message_context):
         str: 'orange',
         datetime.datetime: 'NOW',
         typing.List[str]: 'FOR blurb,blabi',
-        inspect._empty: 'help', # guessing it's help's `args` param
+        inspect._empty: 'help' # guessing it's help's `args` param
     }
 
     expected_func_names = []
@@ -58,9 +58,11 @@ def test_save_and_load_known_user_func_history(mocker, bot, message_context):
             continue
 
         signature = inspect.signature(func)
-        args = (sample_args[param.annotation]
-                for (name, param) in signature.parameters.items()
-                if name not in default_args)
+        args = (
+            sample_args[param.annotation]
+            for (name, param) in signature.parameters.items()
+            if name not in default_args and param.annotation in sample_args
+        )
         message_text = f'{command} {" ".join(args)}'.strip()
 
         with message_context(bot, sender=MOCK_PERSON):
@@ -79,6 +81,7 @@ def test_save_and_load_known_user_func_history(mocker, bot, message_context):
                 'text': message_text
             })
 
+            print(message_text)
             assert spy.call_count == 1
             expected_func_names.append(func.__name__)
 

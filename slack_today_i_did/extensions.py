@@ -103,13 +103,19 @@ class ExtensionExtensions(BotExtension):
 
         return ChannelMessage(channel, message)
 
-    def tokens_status(self, channel: str) -> ChannelMessages:
+    # TODO: just_token_name: Flag[str]
+    def tokens_status(self, channel: str, just_token_name: parser.Flag[str] = None) -> ChannelMessages:
         """ Display all the known tokens and if they are enabled """
-        known_tokens = [
-            (token, token not in self._disabled_tokens) for token in self.known_tokens()
-        ]
 
-        message = '\n'.join(f'{token}: {is_enabled}' for (token, is_enabled) in known_tokens)
+        if just_token_name is None:
+            known_tokens = [
+                (token, token not in self._disabled_tokens) for token in self.known_tokens()
+            ]
+
+            message = '\n'.join(f'{token}: {is_enabled}' for (token, is_enabled) in known_tokens)
+        else:
+            token = just_token_name.strip()[1:]
+            message = f'{token}: {token in self._disabled_tokens}'
 
         return ChannelMessage(channel, message)
 

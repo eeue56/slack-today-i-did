@@ -1,7 +1,15 @@
-from typing import Any, TypeVar, Callable, Dict, List, Tuple, NamedTuple, Union
+from typing import Any, TypeVar, Callable, Dict, List, Tuple, NamedTuple, Union, Generic
 import copy
 import functools
 import argparse
+
+
+FlagTypes = TypeVar('FlagTypes', str, int, bool)
+
+
+class Flag(Generic[FlagTypes]):
+    def __init__(self, value: FlagTypes):
+        self.value = value
 
 
 # tokenizer types
@@ -152,9 +160,13 @@ def parse(tokens: List[TokenAndRest], known_functions: FunctionMap) -> FuncCallB
     else:
         first_function_name = tokens[0][1]
         first_arg = tokens[0][2].strip()
+        first_flags = tokens[0][3]
 
         if len(first_arg) > 0:
             args.append(Constant(first_arg, str))
+
+        for flag in first_flags:
+            args.append(Constant(flag, type(flag)))
 
         if len(tokens) > 1:
             for (start_index, function_name, arg_to_function, flags) in tokens[1:]:
@@ -202,6 +214,7 @@ def evaluate_func_call(
 
     # check arity mismatch
     num_keyword_args = len(action.__defaults__) if action.__defaults__ else 0
+    print('number of keyword args', num_keyword_args)
     num_positional_args = len(annotations) - num_keyword_args
     if num_positional_args > len(args_result.result):
         argument_errors.append(
@@ -212,6 +225,9 @@ def evaluate_func_call(
                 args_result.return_types
             )
         )
+
+    print('annotations', annotations)
+    print('result', args_result)
 
     mismatching_types = mismatching_types_messages(
         action,
@@ -241,6 +257,7 @@ def evaluate_args(
     all_errors = []
 
     for arg in args:
+        print('arg', arg)
         if isinstance(arg, Constant):
             result.append(arg.value)
             return_types.append(arg.return_type)

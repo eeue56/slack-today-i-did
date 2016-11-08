@@ -13,6 +13,9 @@ MOCK_FLAGS = {
             'action': 'store_true'
         },
         {
+            'patterns': ['--need']
+        },
+        {
             'patterns': ['default_argument']
         }
     ],
@@ -25,6 +28,7 @@ TEXT_WITH_TOKEN_MISPELLED = "hfllo"
 TEXT_WITH_TOKENS = "hello dave NOW"
 TEXT_WITH_TOKEN_AND_FLAGS = "hello --save me"
 TEXT_WITH_TOKENS_AND_FLAGS = "hello --save me NOW"
+TEXT_WITH_TOKEN_AND_FLAG_ARG = 'hello --need somebody okay'
 
 
 def test_tokens_with_index_on_no_tokens():
@@ -109,6 +113,18 @@ def test_tokens_with_index_on_token_with_flags():
     assert first_token[1] == 'hello'
     assert first_token[2] == 'me'
     assert first_token[3].get('save') == True
+
+
+def test_tokens_with_index_on_token_with_flags_and_args():
+    tokens = parser.tokenize(TEXT_WITH_TOKEN_AND_FLAG_ARG, MOCK_TOKENS, flags=MOCK_FLAGS)
+    assert len(tokens) == 1
+
+    first_token = tokens[0]
+
+    assert first_token[0] == 0
+    assert first_token[1] == 'hello'
+    assert first_token[2] == 'okay'
+    assert first_token[3].get('need') == 'somebody'
 
 
 def test_tokens_with_index_on_token_with_flags():

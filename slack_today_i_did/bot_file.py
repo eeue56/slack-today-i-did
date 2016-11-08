@@ -133,6 +133,13 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             '!!': self.last_command_statement
         }
 
+    def known_flags(self):
+        return {
+            'tokens-status': [{
+                'patterns': ['--just']
+            }]
+        }
+
     def known_user_functions(self):
         return {
             'bother': self.bother,
