@@ -489,12 +489,14 @@ class DeployComplexityExtensions(BotExtension):
     def last_prs(self, channel: str) -> None:
         """ list the PRs in the main repo """
 
+        print(self.deploy_complexity_repo)
+        print(self.repo)
         self.deploy_complexity_repo.get_ready()
         self.repo.get_ready()
 
         script_location = f'{self.deploy_complexity_repo.repo_dir}/deploy-complexity.rb'
 
-        output = subprocess.check_output([script_location])
+        output = subprocess.check_output([script_location, self.repo.repo_dir])
 
         message = output.decode()
 
