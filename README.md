@@ -1,5 +1,18 @@
 # slack-today-i-did
 
+A chat-ops bot designed around the principle of ensuring that types for functions are correct.
+
+
+## Features
+
+- slack and repl support
+- live-reload of functions
+- live-reload of the entire project
+- type safe interactions
+- useful error hints
+- enable/disable features at runtime
+- command history
+
 ## Setup
 
 - You must have Python 3.6 installed
