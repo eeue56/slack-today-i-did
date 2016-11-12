@@ -19,7 +19,6 @@ def setup():
         config_found = False
 
     repo = None
-    data = {}
 
     os.makedirs('reports', exist_ok=True)
 
@@ -27,6 +26,8 @@ def setup():
         os.makedirs('repos', exist_ok=True)
         github_data = data['github']
         repo = ElmRepo(github_data['folder'], github_data['token'], github_data['org'], github_data['repo'])
+    else:
+        data = {}
 
     return (data, repo)
 
