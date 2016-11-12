@@ -190,8 +190,8 @@ class ElmRepo(OurRepo):
         with open(filename) as f:
             text = f.read()
 
-        if 'port' in text or 'Signal' in text:
-            port_count = text.count('port')
+        if '\nport' in text or 'Signal' in text:
+            port_count = text.count('\nport')
             signal_count = text.count('Signal')
             breakdown['Ports and signals'] = (port_count + signal_count) * 3
 
