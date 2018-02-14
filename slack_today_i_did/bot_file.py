@@ -16,7 +16,8 @@ from slack_today_i_did.extensions import (
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, RollbarExtensions,
-    ElmExtensions, ExtensionExtensions
+    ElmExtensions, ExtensionExtensions,
+    DatesExtensions
 )
 
 from slack_today_i_did.generic_bot import GenericSlackBot, ChannelMessage, ChannelMessages
@@ -26,8 +27,8 @@ import slack_today_i_did.self_aware as self_aware
 class Extensions(
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
-    SessionExtensions, RollbarExtensions,
-    ElmExtensions, ExtensionExtensions
+    SessionExtensions, ExtensionExtensions,
+    DatesExtensions
 ):
     pass
 
@@ -133,8 +134,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'WAIT': self.wait_statement,
             'NOW': self.now_statement,
             'NUM': self.num_statement,
-            '!!': self.last_command_statement,
-            'make-dates': self.make_dates
+            '!!': self.last_command_statement
         }
 
     def known_user_functions(self):
@@ -178,7 +178,9 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'known-ext': self.known_extensions,
             'disable-ext': self.disable_extension,
             'enable-ext': self.enable_extension,
-            'load-ext': self.load_extension
+            'load-ext': self.load_extension,
+
+            'make-dates': self.make_dates
         }
 
     def reload_branch(self, channel: str, branch: str = None) -> ChannelMessages:

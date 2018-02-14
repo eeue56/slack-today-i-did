@@ -72,8 +72,7 @@ class GenericSlackBot(BetterSlack):
 
     def known_statements(self):
         return {
-            '!!': self.last_command_statement,
-            'make-dates': self.make_dates
+            '!!': self.last_command_statement
         }
 
     def on_tick(self):
@@ -123,36 +122,6 @@ class GenericSlackBot(BetterSlack):
             # deal with exceptions running the command
             if len(evaluation.errors) > 0:
                 self.send_channel_message(channel, '\n\n'.join(evaluation.errors))
-                return
-
-            if evaluation.action == self.known_statements()['make-dates']:
-                channel_info = self.get_channel_info(channel)
-
-                users = [user for user in channel_info['channel']['members'] if user != self.user_id]
-                random.shuffle(users)
-
-                extras = []
-
-                if len(users) % 2 == 1:
-                    extras = users[-3:]
-                    users = users[:-3] 
-
-                pairs = [f'[ <@{first}>, <@{second}> ]' for (first, second) in zip(users[::2], users[1::2])]
-
-                if extras:
-
-                    extras_as_string = ', '.join(f"<@{x}>" for x in extras)
-                    pairs.append(f'[ {extras_as_string} ]')
-
-                joined_pairs = '\n'.join(pairs)
-
-                text_to_send = f"""
-Hey everyone! These are your pairs for this week!
-We suggest meeting at 13:00 on Wednesday, or find a date that works for you! 
-Read more about it [some-link-to-be-added]
-{joined_pairs}
-                """.strip()
-                self.send_channel_message(channel, text_to_send)
                 return
                 
             if func_call.return_type == ChannelMessages:
@@ -211,9 +180,6 @@ Read more about it [some-link-to-be-added]
 
         return action(*args)
 
-
-    def make_dates(self, channel: str) -> ChannelMessages:
-        pass
 
     def list(self, channel: str) -> ChannelMessages:
         """ list known statements and functions """
