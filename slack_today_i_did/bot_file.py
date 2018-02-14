@@ -155,13 +155,6 @@ class TodayIDidBot(Extensions, GenericSlackBot):
 
             'house-party': self.party,
 
-            'rollbar-item': self.rollbar_item,
-
-            'elm-progress': self.elm_progress,
-            'elm-progress-on': self.elm_progress_on,
-            'find-017-matches': self.find_elm_017_matches,
-            'how-hard-to-port': self.how_hard_to_port,
-
             'who-do-you-know': self.get_known_names,
             'know-me': self.add_known_name,
 
