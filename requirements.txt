@@ -1,7 +1,7 @@
 json-tricks==3.2.0
 mypy-lang==0.4.4
 requests==2.11.1
-slackclient==1.0.2
+slackclient==1.0.9
 typed-ast==0.5.6
 websockets==3.2
 psutil==4.3.1

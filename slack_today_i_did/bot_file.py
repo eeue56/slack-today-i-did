@@ -35,12 +35,13 @@ class Extensions(
 class TodayIDidBot(Extensions, GenericSlackBot):
 
     def __init__(self, *args, **kwargs):
+        self.name = ''
         kwargs = self._setup_from_kwargs_and_remove_fields(**kwargs)
 
         GenericSlackBot.__init__(self, *args, **kwargs)
         self.reports = {}
-        self.name = 'today-i-did'
 
+        print('Connecting with the name', self.name)
         self._setup_known_names()
         self._setup_notify()
         self._setup_sessions()
@@ -54,12 +55,14 @@ class TodayIDidBot(Extensions, GenericSlackBot):
         else:
             self.rollbar = Rollbar(rollbar_token)
 
+
         self.repo = kwargs.pop('elm_repo', None)
         self.reports_dir = kwargs.pop('reports_dir', 'reports')
         self.known_names_file = kwargs.pop('known_names_file', 'names.json')
         self.notify_file = kwargs.pop('notify_file', 'notify.json')
         self.session_file = kwargs.pop('session_file', 'sessions.json')
         self.command_history_file = kwargs.pop('command_history_file', 'command_history.json')
+        self.name = kwargs.pop('bot_name', '')
         return kwargs
 
     def _setup_command_history(self) -> None:
@@ -130,7 +133,8 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'WAIT': self.wait_statement,
             'NOW': self.now_statement,
             'NUM': self.num_statement,
-            '!!': self.last_command_statement
+            '!!': self.last_command_statement,
+            'make-dates': self.make_dates
         }
 
     def known_user_functions(self):

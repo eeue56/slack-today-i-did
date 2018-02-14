@@ -27,7 +27,10 @@ def setup():
         github_data = data['github']
         repo = ElmRepo(github_data['folder'], github_data['token'], github_data['org'], github_data['repo'])
     else:
-        data = {}
+        data = {
+            'token': os.getenv('SLACK_TOKEN', ''),
+            'bot_name': os.getenv('BOT_NAME', '')
+        }
 
     return (data, repo)
 
@@ -36,7 +39,8 @@ def setup_slack(data, repo):
     return TodayIDidBot(
         data.get('token', ''),
         rollbar_token=data.get('rollbar-token', None),
-        elm_repo=repo
+        elm_repo=repo,
+        bot_name=data['bot_name']
     )
 
 

@@ -43,14 +43,17 @@ class BetterSlack(SlackClient):
         if reply.status_code != 200:
             raise SlackConnectionError
         else:
+            print('Connected okay')
             login_data = reply.json()
 
             if login_data["ok"]:
                 self.ws_url = login_data['url']
                 if not self._should_reconnect:
-                    self.server.parse_slack_login_data(login_data)
+                    self.server.parse_slack_login_data(login_data, use_rtm_start=True)
                 self._conn = websockets.connect(self.ws_url, ssl=ssl_context)
+                print('Made websocket connection')
             else:
+                print('Failed to connect..')
                 raise SlackLoginError
 
         self.websocket = await self._conn.__aenter__()
@@ -146,6 +149,11 @@ class BetterSlack(SlackClient):
     def send_channel_message(self, channel: str, message: str) -> None:
         json = {"type": "message", "channel": channel, "text": message}
         self.send_to_websocket(json)
+
+    def get_channel_info(self, channel: str) -> None:
+        channel_info = self.api_call('channels.info', channel=channel)
+
+        return channel_info
 
     def connected_user(self, username: str) -> str:
         if username not in self.known_users:
