@@ -155,6 +155,11 @@ class BetterSlack(SlackClient):
 
         return channel_info
 
+    def get_user_info(self, user_id: str) -> None:
+        user_info = self.api_call('users.info', user=user_id)
+
+        return user_info
+
     def connected_user(self, username: str) -> str:
         if username not in self.known_users:
             self.set_known_users()
