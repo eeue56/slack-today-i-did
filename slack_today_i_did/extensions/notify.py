@@ -16,7 +16,7 @@ import slack_today_i_did.text_tools as text_tools
 
 
 class NotifyExtensions(BotExtension):
-    def _setup_notify(self) -> None:
+    def _setup_extension(self) -> None:
         self.notify = Notification()
         self.notify.load_from_file(self.notify_file)
 
@@ -51,3 +51,18 @@ class NotifyExtensions(BotExtension):
             return
 
         return ChannelMessage(channel, f"<@{person}> ^")
+
+
+    def _parse_message(self, channel: str, strings: List[str]) -> None:
+        if self.notify is None:
+            return 
+
+        people_who_want_notification = []
+
+        for string in strings:
+            people_who_want_notification.extend(self.notify.who_wants_it(string))
+
+        people_who_want_notification = set(people_who_want_notification)
+
+        for person in people_who_want_notification:
+            self.ping_person(channel, person)

@@ -17,6 +17,8 @@ from slack_today_i_did.known_names import KnownNames
 from slack_today_i_did.notify import Notification
 import slack_today_i_did.parser as parser
 import slack_today_i_did.text_tools as text_tools
+from google.oauth2 import service_account
+from apiclient.discovery import build
 
 
 HELP_TEXT = os.getenv('DATES_EXT_HELP', """
@@ -45,15 +47,19 @@ def get_user_email(user) -> str:
 
     return ''
 
+
 class DatesExtensions(BotExtension):
-    def _create_calendar_event(self, users):
-        from google.oauth2 import service_account
-        from apiclient.discovery import build
+    def _setup_extension(self):
+        self.credentials = None
+        if os.getenv('GOOGLE_CALENDAR_KEY', None) is None:
+            return 
 
         calendar_credentials = json.loads(os.getenv('GOOGLE_CALENDAR_KEY', ''))
-        credentials = service_account.Credentials.from_service_account_info(calendar_credentials)
+        self.credentials = service_account.Credentials.from_service_account_info(calendar_credentials)
 
-        calendar_service = build('calendar', 'v3', credentials=credentials)
+
+    def _create_calendar_event(self, users):
+        calendar_service = build('calendar', 'v3', credentials=self.credentials)
 
         next_wednesday = get_next_day("Wednesday").replace(hour=13, minute=0, second=0)
 
@@ -88,7 +94,6 @@ class DatesExtensions(BotExtension):
           'guestsCanModify': True,
         }
 
-
         event = calendar_service.events().insert(calendarId='primary', body=event, sendNotifications=True).execute()
 
 
@@ -122,7 +127,7 @@ class DatesExtensions(BotExtension):
 {joined_pairs}
                 """.strip()
 
-        if os.getenv('GOOGLE_CALENDAR_KEY', None) is not None:
+        if self.credentials is None:
             for pair in user_pairs:
                 self._create_calendar_event(pair)
             if extras: 

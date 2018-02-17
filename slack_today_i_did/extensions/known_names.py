@@ -16,7 +16,7 @@ import slack_today_i_did.text_tools as text_tools
 
 
 class KnownNamesExtensions(BotExtension):
-    def _setup_known_names(self) -> None:
+    def _setup_extension(self) -> None:
         self.known_names = KnownNames()
         self.known_names.load_from_file(self.known_names_file)
 

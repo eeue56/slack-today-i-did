@@ -8,16 +8,17 @@ To add a new function:
 
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 
-from slack_today_i_did.rollbar import Rollbar
+from slack_today_i_did.external.rollbar import Rollbar
 
 from slack_today_i_did.extensions import (
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, RollbarExtensions,
     ElmExtensions, ExtensionExtensions,
-    DatesExtensions
+    DatesExtensions, QuipExtensions,
+    BugReportHintExtensions
 )
 
 from slack_today_i_did.generic_bot import GenericSlackBot, ChannelMessage, ChannelMessages
@@ -28,7 +29,7 @@ class Extensions(
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, ExtensionExtensions,
-    DatesExtensions
+    DatesExtensions, BugReportHintExtensions
 ):
     pass
 
@@ -43,11 +44,16 @@ class TodayIDidBot(Extensions, GenericSlackBot):
         self.reports = {}
 
         print('Connecting with the name', self.name)
-        self._setup_known_names()
-        self._setup_notify()
-        self._setup_sessions()
         self._setup_command_history()
-        self._setup_enabled_tokens()
+        self.setup_extensions()
+
+    def setup_extensions(self):
+        known_bases = list(set(self._flatten_bases(self.__class__)))
+        
+        for extension in known_bases:
+            for (func_name, func) in extension.__dict__.items():
+                if func_name == '_setup_extension':
+                    func(self)
 
     def _setup_from_kwargs_and_remove_fields(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         rollbar_token = kwargs.pop('rollbar_token', None)
@@ -55,7 +61,6 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             self.rollbar = None
         else:
             self.rollbar = Rollbar(rollbar_token)
-
 
         self.repo = kwargs.pop('elm_repo', None)
         self.reports_dir = kwargs.pop('reports_dir', 'reports')
@@ -77,6 +82,14 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             "rollbar": self.rollbar is not None
         }
 
+    def extension_parse(self, channel: str, messages: List[str]):
+        known_bases = list(set(self._flatten_bases(self.__class__)))
+        
+        for extension in known_bases:
+            for (func_name, func) in extension.__dict__.items():
+                if func_name == '_parse_message':
+                    func(self, channel, messages)
+
     def _actually_parse_message(self, message):
         GenericSlackBot._actually_parse_message(self, message)
 
@@ -87,15 +100,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
         if 'text' in message:
             strings.append(message['text'])
 
-        people_who_want_notification = []
-
-        for string in strings:
-            people_who_want_notification.extend(self.notify.who_wants_it(string))
-
-        people_who_want_notification = set(people_who_want_notification)
-
-        for person in people_who_want_notification:
-            self.ping_person(message['channel'], person)
+        self.extension_parse(message['channel'], strings)
 
         if self.command_history.needs_save:
             self.command_history.save_to_file(self.command_history_file)

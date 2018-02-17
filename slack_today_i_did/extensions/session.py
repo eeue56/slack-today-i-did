@@ -16,7 +16,7 @@ import slack_today_i_did.text_tools as text_tools
 
 
 class SessionExtensions(BotExtension):
-    def _setup_sessions(self) -> None:
+    def _setup_extension(self) -> None:
         self.sessions = Sessions()
         self.sessions.load_from_file(self.session_file)
 

@@ -135,11 +135,15 @@ class GenericSlackBot(BetterSlack):
 
             if evaluation.action != self.known_statements()['!!']:
                 self.command_history.add_command(channel, evaluation.action, evaluation.args)
+
+
         except Exception as e:
             self.send_channel_message(channel, f'We got an error {e}!')
 
     def parse_message(self, message):
         # if we don't have any of the useful data, return early
+
+        self._last_message = message
 
         if 'type' not in message or 'text' not in message:
             return None

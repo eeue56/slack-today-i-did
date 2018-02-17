@@ -150,6 +150,10 @@ class BetterSlack(SlackClient):
         json = {"type": "message", "channel": channel, "text": message}
         self.send_to_websocket(json)
 
+    def send_threaded_message(self, channel: str, time_stamp: str, message: str) -> None:
+        json = {"type": "message", "channel": channel, "text": message, "thread_ts":time_stamp}
+        self.send_to_websocket(json)
+
     def get_channel_info(self, channel: str) -> None:
         channel_info = self.api_call('channels.info', channel=channel)
 

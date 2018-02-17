@@ -16,7 +16,7 @@ import slack_today_i_did.text_tools as text_tools
 
 
 class ExtensionExtensions(BotExtension):
-    def _setup_enabled_tokens(self):
+    def _setup_extension(self):
         """ Store disabled tokens in a dict of token: user
             Store disabled extensions in just a list of class names
         """
