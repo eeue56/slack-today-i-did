@@ -9,3 +9,4 @@ prompt-toolkit==1.0.8
 google-api-python-client==1.6.5
 google-auth==1.4.1
 google-auth-httplib2==0.0.3
+html2text==2018.1.9
