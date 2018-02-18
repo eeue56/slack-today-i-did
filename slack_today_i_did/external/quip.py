@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+# flake8: noqa
+
 """A Quip API client library.
 
 For full API documentation, visit https://quip.com/api/.
@@ -47,7 +49,7 @@ import xml.etree.cElementTree
 try:
     reload(sys)
     sys.setdefaultencoding('utf8')
-except:
+except Exception:
     # Can't change default encoding usually...
     pass
 

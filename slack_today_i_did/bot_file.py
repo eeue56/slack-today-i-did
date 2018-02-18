@@ -15,10 +15,8 @@ from slack_today_i_did.external.rollbar import Rollbar
 from slack_today_i_did.extensions import (
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
-    SessionExtensions, RollbarExtensions,
-    ElmExtensions, ExtensionExtensions,
-    DatesExtensions, QuipExtensions,
-    BugReportHintExtensions
+    SessionExtensions, ExtensionExtensions,
+    DatesExtensions, BugReportHintExtensions
 )
 
 from slack_today_i_did.generic_bot import GenericSlackBot, ChannelMessage, ChannelMessages
@@ -49,7 +47,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
 
     def setup_extensions(self):
         known_bases = list(set(self._flatten_bases(self.__class__)))
-        
+
         for extension in known_bases:
             for (func_name, func) in extension.__dict__.items():
                 if func_name == '_setup_extension':
@@ -84,7 +82,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
 
     def extension_parse(self, channel: str, messages: List[str]):
         known_bases = list(set(self._flatten_bases(self.__class__)))
-        
+
         for extension in known_bases:
             for (func_name, func) in extension.__dict__.items():
                 if func_name == '_parse_message':

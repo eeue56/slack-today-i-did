@@ -1,35 +1,31 @@
-import datetime
-from typing import List
 import json
-import re
-from collections import defaultdict
-import importlib
-import types
 import random
 import os
 
 from datetime import datetime, timedelta
 
-from slack_today_i_did.reports import Report
 from slack_today_i_did.generic_bot import BotExtension, ChannelMessage, ChannelMessages
-from slack_today_i_did.reports import Sessions
-from slack_today_i_did.known_names import KnownNames
-from slack_today_i_did.notify import Notification
-import slack_today_i_did.parser as parser
-import slack_today_i_did.text_tools as text_tools
+
 from google.oauth2 import service_account
 from apiclient.discovery import build
 
 
 HELP_TEXT = os.getenv('DATES_EXT_HELP', """
 Hey everyone! These are your pairs for this week!
-We suggest meeting at 13:00 on Wednesday, or find a date that works for you! 
+We suggest meeting at 13:00 on Wednesday, or find a date that works for you!
     """.strip()).replace('\\n', '\n')
 
 
 def get_next_day(dayname, start_date=None):
-    weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
-            'Friday', 'Saturday', 'Sunday']
+    weekdays = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday'
+    ]
 
     if start_date is None:
         start_date = datetime.today()
@@ -40,7 +36,8 @@ def get_next_day(dayname, start_date=None):
 
     return start_date
 
-def get_user_email(user) -> str: 
+
+def get_user_email(user) -> str:
     if user.get('user', False):
         if user['user'].get('profile', False):
             return user['user']['profile'].get('email', '')
@@ -52,11 +49,10 @@ class DatesExtensions(BotExtension):
     def _setup_extension(self):
         self.credentials = None
         if os.getenv('GOOGLE_CALENDAR_KEY', None) is None:
-            return 
+            return
 
         calendar_credentials = json.loads(os.getenv('GOOGLE_CALENDAR_KEY', ''))
         self.credentials = service_account.Credentials.from_service_account_info(calendar_credentials)
-
 
     def _create_calendar_event(self, users):
         calendar_service = build('calendar', 'v3', credentials=self.credentials)
@@ -69,7 +65,7 @@ class DatesExtensions(BotExtension):
         end_timestamp = end.isoformat()
 
         user_info = [self.get_user_info(user) for user in users]
-        user_emails = [ get_user_email(user) for user in user_info ]
+        user_emails = [get_user_email(user) for user in user_info]
 
         event = {
           'summary': 'Speed date',
@@ -85,9 +81,7 @@ class DatesExtensions(BotExtension):
           },
           'recurrence': [
           ],
-          'attendees': [
-            { "email": email } for email in user_emails
-          ],
+          'attendees': [{"email": email} for email in user_emails],
           'reminders': {
             'useDefault': True
           },
@@ -95,7 +89,6 @@ class DatesExtensions(BotExtension):
         }
 
         event = calendar_service.events().insert(calendarId='primary', body=event, sendNotifications=True).execute()
-
 
     def make_dates(self, channel: str) -> ChannelMessages:
         """ Create random dates based on the people in the channel """
@@ -109,7 +102,7 @@ class DatesExtensions(BotExtension):
 
         if len(users) % 2 == 1:
             extras = users[-3:]
-            users = users[:-3] 
+            users = users[:-3]
 
         user_pairs = zip(users[::2], users[1::2])
 
@@ -121,7 +114,6 @@ class DatesExtensions(BotExtension):
 
         joined_pairs = '\n'.join(pairs)
 
-
         text_to_send = f"""
 {HELP_TEXT}
 {joined_pairs}
@@ -130,9 +122,7 @@ class DatesExtensions(BotExtension):
         if self.credentials is None:
             for pair in user_pairs:
                 self._create_calendar_event(pair)
-            if extras: 
+            if extras:
                 self._create_calendar_event(extras)
 
         return ChannelMessage(channel, text_to_send)
-
-

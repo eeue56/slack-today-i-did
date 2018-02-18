@@ -1,18 +1,17 @@
-from typing import List
-import types
 import os
 
-from slack_today_i_did.reports import Report
 import slack_today_i_did.external.quip as quip
-from slack_today_i_did.generic_bot import BotExtension, ChannelMessage, ChannelMessages
+from slack_today_i_did.generic_bot import BotExtension
+
 
 QUIP_API_KEY = os.getenv('QUIP_API_KEY', None)
+
 
 class QuipExtensions(BotExtension):
     def _setup_extension(self):
         self.quip_client = None
         if QUIP_API_KEY is None:
-            return 
+            return
 
         self.quip_client = quip.QuipClient(QUIP_API_KEY)
 

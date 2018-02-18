@@ -38,7 +38,7 @@ class OurRepo(object):
             self.make_repo_dir()
             os.chdir(self.folder)
             self._git_init()
-        except:
+        except Exception:
             pass
         finally:
             os.chdir(current_dir)

@@ -54,7 +54,7 @@ class CommandHistory(object):
                 as_json = json.load(f, known_types=known_types)
         except FileNotFoundError:
             return
-        except:
+        except Exception:
             # sometimes bad things happen to good people
             return
 
@@ -78,7 +78,7 @@ class CommandHistory(object):
             channel_json = json.dumps(channels)
             with open(filename, 'w') as f:
                 f.write(channel_json)
-        except:
+        except Exception:
             return None
 
         self.needs_save = False

@@ -10,10 +10,10 @@ import json
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 
-# os x is dumb so this fixes the openssl cert import
+# os x stores ssl certs in a strange place, so this fixes the openssl cert import
 try:
     ssl_context.load_verify_locations('/usr/local/etc/openssl/cert.pem')
-except:
+except Exception:
     pass
 
 
@@ -151,7 +151,7 @@ class BetterSlack(SlackClient):
         self.send_to_websocket(json)
 
     def send_threaded_message(self, channel: str, time_stamp: str, message: str) -> None:
-        json = {"type": "message", "channel": channel, "text": message, "thread_ts":time_stamp}
+        json = {"type": "message", "channel": channel, "text": message, "thread_ts": time_stamp}
         self.send_to_websocket(json)
 
     def get_channel_info(self, channel: str) -> None:

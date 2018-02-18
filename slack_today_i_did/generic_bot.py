@@ -20,8 +20,6 @@ import slack_today_i_did.self_aware as self_aware
 import slack_today_i_did.parser as parser
 import slack_today_i_did.text_tools as text_tools
 
-import random 
-
 
 ChannelMessage = NamedTuple('ChannelMessage', [('channel', str), ('text', str)])
 ChannelMessages = Union[ChannelMessage, List[ChannelMessage]]
@@ -123,7 +121,7 @@ class GenericSlackBot(BetterSlack):
             if len(evaluation.errors) > 0:
                 self.send_channel_message(channel, '\n\n'.join(evaluation.errors))
                 return
-                
+
             if func_call.return_type == ChannelMessages:
                 if isinstance(evaluation.result, ChannelMessage):
                     messages = [evaluation.result]
@@ -135,7 +133,6 @@ class GenericSlackBot(BetterSlack):
 
             if evaluation.action != self.known_statements()['!!']:
                 self.command_history.add_command(channel, evaluation.action, evaluation.args)
-
 
         except Exception as e:
             self.send_channel_message(channel, f'We got an error {e}!')
@@ -183,7 +180,6 @@ class GenericSlackBot(BetterSlack):
         args = stuff['args']
 
         return action(*args)
-
 
     def list(self, channel: str) -> ChannelMessages:
         """ list known statements and functions """

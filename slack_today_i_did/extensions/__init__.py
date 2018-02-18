@@ -22,4 +22,4 @@ __all__ = [
     ReportExtensions,
     RollbarExtensions,
     SessionExtensions
-] 
+]
