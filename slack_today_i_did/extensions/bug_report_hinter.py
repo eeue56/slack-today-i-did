@@ -16,17 +16,29 @@ BUG_REPORT_CONFIG = None if _config is None else json.loads(_config)
 class Config(object):
     def __init__(self, pattern: str):
         self.pattern = re.compile(pattern)
+        self.is_enabled = True
 
     def needs_response(self, line: str) -> bool:
+        if not self.is_enabled: 
+            return False
         return self.pattern.match(line)
 
     def respond(self, lines: str) -> str:
         pass
 
+    def reload_response(self) -> None:
+        return 
+
+    def __str__(self):
+        disabled_status = 'Enabled' if self.is_enabled else 'Disabled'
+        return f'{disabled_status}. Watching for {self.pattern}.'
+
+
 class QuipConfig(Config):
     def __init__(self, pattern: str, thread_id: str, quip: QuipExtensions):
         Config.__init__(self, pattern)
         self.thread_id = thread_id
+        self.quip = quip
         self._thread_message = quip._fetch_quip_doc(thread_id) if quip else None
 
     def respond(self, lines: str) -> str:
@@ -34,6 +46,14 @@ class QuipConfig(Config):
             return 
 
         return html2text.html2text(self._thread_message.get('html', ''))
+
+    def reload_response(self) -> None:
+        self._thread_message = self.quip._fetch_quip_doc(self.thread_id) if self.quip else self._thread_message
+
+    def __str__(self):
+        parent_str = Config.__str__(self)
+
+        return f'{parent_str} Quip doc: {self.thread_id}.' 
 
 
 class HardcodedConfig(Config):
@@ -43,6 +63,11 @@ class HardcodedConfig(Config):
 
     def respond(self, lines: str) -> str:
         return self.message
+
+    def __str__(self):
+        parent_str = Config.__str__(self)
+
+        return f'{parent_str} Message: {self.message}.' 
 
 
 class BugReportHintExtensions(QuipExtensions):
@@ -86,3 +111,59 @@ class BugReportHintExtensions(QuipExtensions):
         if config.needs_response(lines):
             response = config.respond(lines)
             self.send_threaded_message(channel, self._last_message['ts'], response)
+
+
+    def enable_bug_report_matcher(self, channel: str, channel_to_enable: str) -> ChannelMessages:
+        """ Enable a bug report matcher for a given channel """
+        if channel_to_enable not in self._bug_messages:
+            return []
+
+        self._bug_messages[channel_to_enable].is_enabled = True
+
+        response = f'Enabled bug report helper for {channel_to_enable}'
+        self.send_threaded_message(channel, self._last_message['ts'], response)
+
+        return []
+
+
+    def disable_bug_report_matcher(self, channel: str, channel_to_disable: str) -> ChannelMessages:
+        """ Disable a bug report matcher for a given channel """
+        if channel_to_disable not in self._bug_messages:
+            return []
+
+        self._bug_messages[channel_to_disable].is_enabled = False
+
+        response = f'Disabled bug report helper for {channel_to_disable}'
+        self.send_threaded_message(channel, self._last_message['ts'], response)
+
+        return []
+
+
+    def display_bug_report_config(self, channel: str, channel_info: str = None) -> ChannelMessages:
+        """ Display config for a channel. If no channel provided, show for all channels """
+        if channel_info is None:
+            response = '\n'.join(f'Channel {channel_} : {config}' for (channel_, config) in self._bug_messages.items())
+        elif channel_info in self._bug_messages:
+            response = str(self._bug_messages[channel_info])
+        else:
+            response = f'No config for the channel {channel_info}'
+
+        self.send_threaded_message(channel, self._last_message['ts'], response)
+
+        return []
+
+    def reload_bug_report_responses(self, channel: str, channel_info: str = None) -> ChannelMessages:
+        """ Reload responses for a channel. If no channel provided, reload for all channels """
+        if channel_info is None:
+            for (channel, config) in self._bug_messages.items():
+                config.reload_response() 
+            response = "Reloaded all configs.."
+        elif channel_info in self._bug_messages:
+            self._bug_messages[channel_info].reload_response()
+            response = "Reloaded config"
+        else:
+            response = f'No config for the channel {channel_info}'
+
+        self.send_threaded_message(channel, self._last_message['ts'], response)
+
+        return []

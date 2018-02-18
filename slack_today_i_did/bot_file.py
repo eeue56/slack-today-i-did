@@ -178,7 +178,13 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'enable-ext': self.enable_extension,
             'load-ext': self.load_extension,
 
-            'make-dates': self.make_dates
+            'make-dates': self.make_dates,
+
+
+            'enable-bug-report': self.enable_bug_report_matcher,
+            'disable-bug-report': self.disable_bug_report_matcher,
+            'display-bug-report': self.display_bug_report_config,
+            'reload-bug-report': self.reload_bug_report_responses
         }
 
     def reload_branch(self, channel: str, branch: str = None) -> ChannelMessages:
