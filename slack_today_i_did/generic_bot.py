@@ -32,6 +32,7 @@ class GenericSlackBot(BetterSlack):
     def __init__(self, *args, **kwargs):
         BetterSlack.__init__(self, *args, **kwargs)
 
+        self.name = 'GenericSlackBot'
         self.command_history = CommandHistory()
 
     def is_direct_message(self, channel):

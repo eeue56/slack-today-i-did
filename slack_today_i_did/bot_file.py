@@ -35,10 +35,12 @@ class Extensions(
 class TodayIDidBot(Extensions, GenericSlackBot):
 
     def __init__(self, *args, **kwargs):
-        self.name = ''
         kwargs = self._setup_from_kwargs_and_remove_fields(**kwargs)
+        name = kwargs.pop('bot_name', '')
 
         GenericSlackBot.__init__(self, *args, **kwargs)
+        self.name = name
+
         self.reports = {}
 
         print('Connecting with the name', self.name)
@@ -66,7 +68,6 @@ class TodayIDidBot(Extensions, GenericSlackBot):
         self.notify_file = kwargs.pop('notify_file', 'notify.json')
         self.session_file = kwargs.pop('session_file', 'sessions.json')
         self.command_history_file = kwargs.pop('command_history_file', 'command_history.json')
-        self.name = kwargs.pop('bot_name', '')
         return kwargs
 
     def _setup_command_history(self) -> None:
