@@ -119,7 +119,7 @@ class DatesExtensions(BotExtension):
 {joined_pairs}
                 """.strip()
 
-        if self.credentials is None:
+        if self.credentials is not None:
             for pair in user_pairs:
                 self._create_calendar_event(pair)
             if extras:
