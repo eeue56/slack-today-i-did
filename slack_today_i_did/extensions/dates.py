@@ -104,7 +104,7 @@ class DatesExtensions(BotExtension):
             extras = users[-3:]
             users = users[:-3]
 
-        user_pairs = zip(users[::2], users[1::2])
+        user_pairs = list(zip(users[::2], users[1::2]))
 
         pairs = [f'[ <@{first}>, <@{second}> ]' for (first, second) in user_pairs]
 
