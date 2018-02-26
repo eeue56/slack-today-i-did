@@ -24,6 +24,9 @@ import slack_today_i_did.text_tools as text_tools
 ChannelMessage = NamedTuple('ChannelMessage', [('channel', str), ('text', str)])
 ChannelMessages = Union[ChannelMessage, List[ChannelMessage]]
 
+ThreadMessage = NamedTuple('ThreadMessage', [('channel', str), ('thread_ts', str), ('text', str)])
+ThreadMessages = Union[ThreadMessage, List[ThreadMessage]]
+
 
 class GenericSlackBot(BetterSlack):
     _user_id = None
@@ -131,6 +134,14 @@ class GenericSlackBot(BetterSlack):
 
                 for message in messages:
                     self.send_channel_message(message.channel, message.text)
+            elif func_call.return_type == ThreadMessages:
+                if isinstance(evaluation.result, ThreadMessage):
+                    messages = [evaluation.result]
+                else:
+                    messages = evaluation.result
+
+                for message in messages:
+                    self.send_threaded_message(message.channel, message.thread_ts, message.text)
 
             if evaluation.action != self.known_statements()['!!']:
                 self.command_history.add_command(channel, evaluation.action, evaluation.args)

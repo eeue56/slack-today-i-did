@@ -4,7 +4,7 @@ import json
 import re
 import html2text
 
-from slack_today_i_did.generic_bot import ChannelMessages
+from slack_today_i_did.generic_bot import ThreadMessages, ThreadMessage
 from slack_today_i_did.extensions.quip import QuipExtensions
 
 
@@ -112,7 +112,7 @@ class BugReportHintExtensions(QuipExtensions):
             response = config.respond(lines)
             self.send_threaded_message(channel, self._last_message['ts'], response)
 
-    def enable_bug_report_matcher(self, channel: str, channel_to_enable: str) -> ChannelMessages:
+    def enable_bug_report_matcher(self, channel: str, channel_to_enable: str) -> ThreadMessages:
         """ Enable a bug report matcher for a given channel """
         if channel_to_enable not in self._bug_messages:
             return []
@@ -120,11 +120,9 @@ class BugReportHintExtensions(QuipExtensions):
         self._bug_messages[channel_to_enable].is_enabled = True
 
         response = f'Enabled bug report helper for {channel_to_enable}'
-        self.send_threaded_message(channel, self._last_message['ts'], response)
+        return ThreadMessage(channel, self._last_message['ts'], response)
 
-        return []
-
-    def disable_bug_report_matcher(self, channel: str, channel_to_disable: str) -> ChannelMessages:
+    def disable_bug_report_matcher(self, channel: str, channel_to_disable: str) -> ThreadMessages:
         """ Disable a bug report matcher for a given channel """
         if channel_to_disable not in self._bug_messages:
             return []
@@ -132,11 +130,9 @@ class BugReportHintExtensions(QuipExtensions):
         self._bug_messages[channel_to_disable].is_enabled = False
 
         response = f'Disabled bug report helper for {channel_to_disable}'
-        self.send_threaded_message(channel, self._last_message['ts'], response)
+        return ThreadMessage(channel, self._last_message['ts'], response)
 
-        return []
-
-    def display_bug_report_config(self, channel: str, channel_info: str = None) -> ChannelMessages:
+    def display_bug_report_config(self, channel: str, channel_info: str = None) -> ThreadMessages:
         """ Display config for a channel. If no channel provided, show for all channels """
         if channel_info is None:
             response = '\n'.join(f'Channel {channel_} : {config}' for (channel_, config) in self._bug_messages.items())
@@ -145,11 +141,9 @@ class BugReportHintExtensions(QuipExtensions):
         else:
             response = f'No config for the channel {channel_info}'
 
-        self.send_threaded_message(channel, self._last_message['ts'], response)
+        return ThreadMessage(channel, self._last_message['ts'], response)
 
-        return []
-
-    def reload_bug_report_responses(self, channel: str, channel_info: str = None) -> ChannelMessages:
+    def reload_bug_report_responses(self, channel: str, channel_info: str = None) -> ThreadMessages:
         """ Reload responses for a channel. If no channel provided, reload for all channels """
         if channel_info is None:
             for (channel, config) in self._bug_messages.items():
@@ -161,6 +155,4 @@ class BugReportHintExtensions(QuipExtensions):
         else:
             response = f'No config for the channel {channel_info}'
 
-        self.send_threaded_message(channel, self._last_message['ts'], response)
-
-        return []
+        return ThreadMessage(channel, self._last_message['ts'], response)
