@@ -4,6 +4,7 @@ from .dates import DatesExtensions
 from .elm import ElmExtensions
 from .extension import ExtensionExtensions
 from .known_names import KnownNamesExtensions
+from .lunch_poster import LunchPosterExtensions
 from .notify import NotifyExtensions
 from .quip import QuipExtensions
 from .report import ReportExtensions
@@ -17,6 +18,7 @@ __all__ = [
     ElmExtensions,
     ExtensionExtensions,
     KnownNamesExtensions,
+    LunchPosterExtensions,
     NotifyExtensions,
     QuipExtensions,
     ReportExtensions,

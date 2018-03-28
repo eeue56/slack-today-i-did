@@ -14,6 +14,7 @@ from slack_today_i_did.external.rollbar import Rollbar
 
 from slack_today_i_did.extensions import (
     BasicStatements, KnownNamesExtensions,
+    LunchPosterExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, ExtensionExtensions,
     DatesExtensions, BugReportHintExtensions
@@ -26,6 +27,7 @@ import slack_today_i_did.self_aware as self_aware
 class Extensions(
     BasicStatements, KnownNamesExtensions,
     NotifyExtensions, ReportExtensions,
+    LunchPosterExtensions,
     SessionExtensions, ExtensionExtensions,
     DatesExtensions, BugReportHintExtensions
 ):
@@ -178,6 +180,8 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'load-ext': self.load_extension,
 
             'make-dates': self.make_dates,
+
+            'display-lunch': self.display_lunch,
 
 
             'enable-bug-report': self.enable_bug_report_matcher,
