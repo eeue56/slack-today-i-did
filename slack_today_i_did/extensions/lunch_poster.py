@@ -1,5 +1,7 @@
 import os
 import json
+from datetime import datetime
+
 
 from slack_today_i_did.generic_bot import BotExtension, ChannelMessage, ChannelMessages
 from apiclient.discovery import build
@@ -8,6 +10,14 @@ from google.auth.transport.requests import AuthorizedSession
 
 GOOGLE_SPREADSHEET_KEY = os.getenv('GOOGLE_SPREADSHEET_KEY', None)
 SPREADSHEET_TO_OPEN = os.getenv('SPREADSHEET_TO_OPEN', '')
+
+
+def current_day():
+    days = ["Mandag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lordag", "Lisdag"]
+
+    current_day_number = datetime.today().weekday()
+
+    return days[current_day_number] 
 
 
 class LunchPosterExtensions(BotExtension):
@@ -27,21 +37,31 @@ class LunchPosterExtensions(BotExtension):
         ]
         self._google_spreadsheet_credentials = service_account.Credentials.from_service_account_info(spreadsheet_credentials, scopes=scopes)
 
-    def display_lunch(self, channel: str) -> ChannelMessages:
+    def display_lunch(self, channel: str, day_name: str = None) -> ChannelMessages:
         """ Shows the lunch options for the week """
         if self._google_spreadsheet_credentials is None:
             return []
 
-
         spreadsheet_service = build('sheets', 'v4', credentials=self._google_spreadsheet_credentials)
-
 
         results = spreadsheet_service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_TO_OPEN, range='Sheet1!B1:F10', majorDimension="COLUMNS").execute()
         
         output = []
-        for day in results['values']:
-            bold_day = day.pop(0)
+        
+        if day_name is None:
+            for day in results['values']:
+                bold_day = day.pop(0)
+                output.append(f'*{bold_day}*\n' + '\n'.join(day))
+        else:
+            if day_name.strip().lower() == 'today':
+                day_name = current_day()
 
-            output.append(f'*{bold_day}*\n' + '\n'.join(day))
+            for day in results['values']:
+                bold_day = day.pop(0)
+                
+                if bold_day.strip().lower() != day_name.strip().lower():
+                    continue
+
+                output.append(f'*{bold_day}*\n' + '\n'.join(day))
 
         return ChannelMessage(channel, '\n\n'.join(output))
