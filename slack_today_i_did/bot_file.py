@@ -17,7 +17,8 @@ from slack_today_i_did.extensions import (
     LunchPosterExtensions,
     NotifyExtensions, ReportExtensions,
     SessionExtensions, ExtensionExtensions,
-    DatesExtensions, BugReportHintExtensions
+    DatesExtensions, FikaExtensions,
+    BugReportHintExtensions
 )
 
 from slack_today_i_did.generic_bot import GenericSlackBot, ChannelMessage, ChannelMessages
@@ -29,7 +30,8 @@ class Extensions(
     NotifyExtensions, ReportExtensions,
     LunchPosterExtensions,
     SessionExtensions, ExtensionExtensions,
-    DatesExtensions, BugReportHintExtensions
+    DatesExtensions, FikaExtensions,
+    BugReportHintExtensions
 ):
     pass
 
@@ -180,6 +182,7 @@ class TodayIDidBot(Extensions, GenericSlackBot):
             'load-ext': self.load_extension,
 
             'make-dates': self.make_dates,
+            'make-fika': self.make_fika,
 
             'display-lunch': self.display_lunch,
 
