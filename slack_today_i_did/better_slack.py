@@ -50,6 +50,7 @@ class BetterSlack(SlackClient):
                 self.ws_url = login_data['url']
                 if not self._should_reconnect:
                     self.server.parse_slack_login_data(login_data, use_rtm_start=True)
+                print('Parsed log in data..')
                 self._conn = websockets.connect(self.ws_url, ssl=ssl_context)
                 print('Made websocket connection')
             else:
