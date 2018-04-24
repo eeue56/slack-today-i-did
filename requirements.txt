@@ -1,9 +1,9 @@
 json-tricks==3.2.0
 mypy-lang==0.4.4
 requests==2.11.1
-slackclient==1.0.9
+slackclient==1.2.1
 typed-ast==0.5.6
-websockets==3.2
+websockets==4.0
 psutil==4.3.1
 prompt-toolkit==1.0.8
 google-api-python-client==1.6.5
