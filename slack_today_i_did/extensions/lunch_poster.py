@@ -45,13 +45,14 @@ class LunchPosterExtensions(BotExtension):
         spreadsheet_service = build('sheets', 'v4', credentials=self._google_spreadsheet_credentials)
 
         results = spreadsheet_service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_TO_OPEN, range='Sheet1!B1:F10', majorDimension="COLUMNS").execute()
-        
-        output = []
+
+        messages = []
         
         if day_name is None:
             for day in results['values']:
                 bold_day = day.pop(0)
-                output.append(f'*{bold_day}*\n' + '\n'.join(day))
+                messages.append(ChannelMessage(channel, f'*{bold_day}*\n\n'))
+                messages.extend([ChannelMessage(channel, menu) for menu in day])
         else:
             if day_name.strip().lower() == 'today':
                 day_name = current_day()
@@ -61,7 +62,7 @@ class LunchPosterExtensions(BotExtension):
                 
                 if bold_day.strip().lower() != day_name.strip().lower():
                     continue
+                messages.append(ChannelMessage(channel, f'*{bold_day}*\n\n'))
+                messages.extend([ChannelMessage(channel, menu) for menu in day])
 
-                output.append(f'*{bold_day}*\n' + '\n'.join(day))
-
-        return ChannelMessage(channel, '\n\n'.join(output))
+        return messages
