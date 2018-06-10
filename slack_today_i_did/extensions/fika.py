@@ -10,7 +10,7 @@ from google.oauth2 import service_account
 from apiclient.discovery import build
 
 
-## TODO: move out and share code with dates.py
+# TODO: move out and share code with dates.py
 HELP_TEXT = os.getenv('FIKA_EXT_HELP', """
 Hey everyone! These are your pairs for this week!
 We suggest meeting at 09:00 on Thursday, or find a date that works for you!
