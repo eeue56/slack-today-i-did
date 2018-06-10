@@ -70,12 +70,10 @@ class BetterSlack(SlackClient):
         async with self as self:
             while True:
                 while len(self.message_queue) > 0:
-                    print("Sending a message which is ", len(self.message_queue[0]))
                     await self.websocket.send(self.message_queue.pop(0))
 
                 if parser is not None:
                     incoming = await self.get_message()
-                    print("Got a response of size", len(incoming))
                     try:
                         parser(incoming)
                     except Exception as e:
@@ -92,8 +90,6 @@ class BetterSlack(SlackClient):
 
     async def get_message(self):
         incoming = await self.websocket.recv()
-        print("Incoming message of size", len(incoming))
-        print("Incoming", incoming)
         json_data = ""
         json_data += "{0}\n".format(incoming)
         json_data = json_data.rstrip()
