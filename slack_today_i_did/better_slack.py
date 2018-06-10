@@ -48,16 +48,17 @@ class BetterSlack(SlackClient):
 
             if login_data["ok"]:
                 self.ws_url = login_data['url']
+                self._conn = websockets.connect(self.ws_url, ssl=ssl_context, timeout=30, max_size=2 ** 30)
+                print('Made websocket connection')
                 if not self._should_reconnect:
                     self.server.parse_slack_login_data(login_data, use_rtm_start=True)
                 print('Parsed log in data..')
-                self._conn = websockets.connect(self.ws_url, ssl=ssl_context, timeout=30, max_size=2 ** 30)
-                print('Made websocket connection')
             else:
                 print('Failed to connect..')
                 raise SlackLoginError
 
         self.websocket = await self._conn.__aenter__()
+        print('Starting main loop..')
         return self
 
     async def __aexit__(self, *args, **kwargs):
@@ -67,10 +68,12 @@ class BetterSlack(SlackClient):
         async with self as self:
             while True:
                 while len(self.message_queue) > 0:
+                    print("Sending a message which is ", len(self.message_queue[0]))
                     await self.websocket.send(self.message_queue.pop(0))
 
                 if parser is not None:
                     incoming = await self.get_message()
+                    print("Got a response of size", len(incoming))
                     try:
                         parser(incoming)
                     except Exception as e:
@@ -87,6 +90,8 @@ class BetterSlack(SlackClient):
 
     async def get_message(self):
         incoming = await self.websocket.recv()
+        print("Incoming message of size", len(incoming))
+        print("Incoming", incoming)
         json_data = ""
         json_data += "{0}\n".format(incoming)
         json_data = json_data.rstrip()
