@@ -38,7 +38,7 @@ class BetterSlack(SlackClient):
         self._in_count = 0
 
     async def __aenter__(self):
-        reply = self.server.api_requester.do(self.token, "rtm.start")
+        reply = self.server.api_requester.do(self.token, "rtm.connect")
 
         if reply.status_code != 200:
             raise SlackConnectionError
@@ -51,7 +51,9 @@ class BetterSlack(SlackClient):
                 self._conn = websockets.connect(self.ws_url, ssl=ssl_context, timeout=30, max_size=2 ** 30)
                 print('Made websocket connection')
                 if not self._should_reconnect:
-                    self.server.parse_slack_login_data(login_data, use_rtm_start=True)
+                    self.login_data = login_data
+                    self.domain = self.login_data["team"]["domain"]
+                    self.username = self.login_data["self"]["name"]
                 print('Parsed log in data..')
             else:
                 print('Failed to connect..')
