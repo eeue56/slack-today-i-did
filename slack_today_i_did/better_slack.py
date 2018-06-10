@@ -7,6 +7,7 @@ import websockets
 import asyncio
 import ssl
 import json
+import traceback
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 
@@ -78,6 +79,7 @@ class BetterSlack(SlackClient):
                         parser(incoming)
                     except Exception as e:
                         print(f'Error: {e}')
+                        traceback.print_tb(e.__traceback__)
                 if on_tick() is not None:
                     on_tick()
                 self._in_count += 1

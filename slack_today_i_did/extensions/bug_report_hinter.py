@@ -101,7 +101,11 @@ class BugReportHintExtensions(QuipExtensions):
         if BUG_REPORT_CONFIG is None:
             return
 
-        channel_name = self.get_channel_info(channel).get('channel').get('name')
+        channel_info = self.get_channel_info(channel)
+        if not channel_info['ok']:
+            return
+
+        channel_name = channel_info.get('channel').get('name')
         config = self._bug_messages.get(channel_name, None)
 
         if config is None:
